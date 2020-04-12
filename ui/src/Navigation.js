@@ -6,7 +6,7 @@ import { Link as RouterLink } from "react-router-dom";
 import { Breadcrumbs, Link, Typography } from "@material-ui/core";
 import { AppBar, Toolbar } from "@material-ui/core";
 
-export const Path = props => {
+export const Path = (props) => {
   const qv = queryString.parse(window.location.search);
   if (qv.snapshot === undefined) {
     qv.snapshot = "latest";
@@ -22,7 +22,7 @@ export const Path = props => {
       }
       return total;
     }, [])
-    .map(node => (node === "" ? qv.snapshot : node))
+    .map((node) => (node === "" ? qv.snapshot : node))
     .map((node, index) => {
       const url =
         node === qv.snapshot
@@ -47,7 +47,7 @@ export const Path = props => {
   return <Breadcrumbs>{breads}</Breadcrumbs>;
 };
 
-export const TitleBar = props => (
+export const TitleBar = (props) => (
   <AppBar position="static">
     <Toolbar css={{ display: "flex" }}>
       <Typography css={{ marginRight: "1em" }} variant="h6">

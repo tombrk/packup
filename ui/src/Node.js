@@ -7,7 +7,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  ListItemSecondaryAction
+  ListItemSecondaryAction,
 } from "@material-ui/core";
 import { InsertDriveFile, Archive, Folder } from "@material-ui/icons";
 import ContentLoader from "react-content-loader";
@@ -17,10 +17,10 @@ const api =
     ? "http://localhost:2112/api/v1"
     : "/api/v1";
 
-const ListItemLink = props => <ListItem button {...props} />;
-const ALink = props => <Link {...props} to={props.href} />;
+const ListItemLink = (props) => <ListItem button {...props} />;
+const ALink = (props) => <Link {...props} to={props.href} />;
 
-const Node = props => {
+const Node = (props) => {
   const Icon = props.icon;
   return (
     <ListItemLink component={props.link} href={props.href}>
@@ -33,7 +33,7 @@ const Node = props => {
   );
 };
 
-export const File = props => (
+export const File = (props) => (
   <Node
     {...props}
     link="a"
@@ -43,7 +43,7 @@ export const File = props => (
   />
 );
 
-export const Dir = props => (
+export const Dir = (props) => (
   <Node
     {...props}
     name={props.name + "/"}

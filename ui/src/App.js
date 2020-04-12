@@ -8,13 +8,15 @@ import {
   Paper,
   Container,
   LinearProgress,
-  Typography
+  Typography,
 } from "@material-ui/core";
 import { Error } from "@material-ui/icons";
 
 import NodeList, { PlaceholderList } from "./NodeList";
 import { TitleBar, Path } from "./Navigation";
 import SnapshotPicker from "./SnapshotPicker";
+
+import { SnackbarProvider, useSnackbar } from "notistack";
 
 const api =
   process.env.NODE_ENV === "development"
@@ -25,27 +27,29 @@ export default class App extends Component {
   state = {
     error: null,
     loaded: false,
-    items: [""]
+    items: [""],
   };
 
   queryFiles(props) {
     const dir = props.location.pathname;
     const qv = queryString.parse(props.location.search);
     this.setState({ loaded: false });
+
     Axios.get(
       `${api}/files?${queryString.stringify({
         path: dir,
-        snapshot: qv.snapshot
+        snapshot: qv.snapshot,
       })}`
     ).then(
-      result => {
+      (result) => {
         this.setState({
           loaded: true,
-          items: result.data.filter(item => item.path !== dir)
+          items: result.data.filter((item) => item.path !== dir),
         });
       },
 
-      error => {
+      (error) => {
+        console.log(JSON.stringify(error));
         this.setState({ loaded: true, error });
       }
     );
@@ -67,7 +71,7 @@ export default class App extends Component {
   render() {
     const { error, loaded, items } = this.state;
 
-    const Skel = props => (
+    const Skel = (props) => (
       <Container maxWidth="md">
         <Paper>
           <TitleBar>
@@ -78,7 +82,7 @@ export default class App extends Component {
                 flexGrow: 1,
                 display: "flex",
                 alignItems: "center",
-                marginRight: ".5em"
+                marginRight: ".5em",
               }}
             >
               <Path dir={this.props.location.pathname} />{" "}
@@ -89,7 +93,7 @@ export default class App extends Component {
                 display: "flex",
                 alignItems: "center",
                 paddingLeft: "0.5em",
-                paddingRight: "0.5em"
+                paddingRight: "0.5em",
               }}
             >
               <SnapshotPicker {...this.props} />
@@ -108,11 +112,20 @@ export default class App extends Component {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              padding: "3em"
+              padding: "3em",
             }}
           >
             <Error css={{ fontSize: "3em" }} />
-            <Typography>{error.message}</Typography>
+            <Typography css={{ marginBottom: "1em" }}>
+              {error.message}
+            </Typography>
+            <Typography>
+              <pre>
+                <code>
+                  {error.response === undefined ? "" : error.response.data}
+                </code>
+              </pre>
+            </Typography>
           </div>
         </Skel>
       );
@@ -127,7 +140,7 @@ export default class App extends Component {
                 position: "absolute",
                 left: 0,
                 top: 0,
-                right: 0
+                right: 0,
               }}
             />
             <PlaceholderList items={items} />

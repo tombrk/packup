@@ -3,6 +3,7 @@ package restic
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -43,6 +44,16 @@ type File struct {
 	Type string `json:"type"`
 }
 
+type ErrNoFiles struct {
+	Snapshot string
+	Path     string
+}
+
+func (e ErrNoFiles) Error() string {
+	return fmt.Sprintf(`Listing path '%s' of snapshot '%s' did not return any files.
+This usually means the snapshot does not exist`, e.Path, e.Snapshot)
+}
+
 func (r *Restic) Files(snapshot string, path string, recursive bool) ([]File, error) {
 	args := []string{snapshot, path, "--json"}
 	if recursive {
@@ -58,6 +69,10 @@ func (r *Restic) Files(snapshot string, path string, recursive bool) ([]File, er
 
 	var files []File
 	for _, l := range strings.Split(lines, "\n") {
+		if l == "" {
+			continue
+		}
+
 		var f File
 		if err := json.Unmarshal([]byte(l), &f); err != nil {
 			return nil, err
@@ -68,6 +83,10 @@ func (r *Restic) Files(snapshot string, path string, recursive bool) ([]File, er
 		}
 
 		files = append(files, f)
+	}
+
+	if len(files) == 0 {
+		return nil, ErrNoFiles{Snapshot: snapshot, Path: path}
 	}
 
 	return files, nil

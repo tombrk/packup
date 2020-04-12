@@ -16,18 +16,18 @@ export default class SnapshotPicker extends Component {
   state = {
     error: null,
     loaded: false,
-    items: []
+    items: [],
   };
 
   componentDidMount() {
     Axios.get(`${api}/snapshots`).then(
-      result =>
+      (result) =>
         this.setState({
           loaded: true,
-          items: result.data
+          items: result.data == null ? [] : result.data,
         }),
-      error => {
-        this.setState({ loaded: true, error });
+      (error) => {
+        this.setState({ loaded: true, error: error, items: [] });
       }
     );
   }
@@ -38,18 +38,19 @@ export default class SnapshotPicker extends Component {
 
     return (
       <Select
+        disabled={items.length === 0}
         value={qv.snapshot === undefined ? "latest" : qv.snapshot}
-        onChange={e => {
+        onChange={(e) => {
           this.props.history.push(
             `${this.props.location.pathname}?${queryString.stringify({
               ...qv,
-              snapshot: e.target.value
+              snapshot: e.target.value,
             })}`
           );
         }}
       >
         <MenuItem value="latest">latest</MenuItem>
-        {items.reverse().map(item => (
+        {items.reverse().map((item) => (
           <MenuItem key={item.id} value={item.id}>
             {formatRelative(new Date(item.time), new Date())}
           </MenuItem>
