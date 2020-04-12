@@ -1,5 +1,15 @@
-# VERSION := $(shell git describe --tags --dirty --always)
+.DEFAULT_GOAL: dev
 
-.PHONY: ui
-ui:
+# run dev server
+.PHONY: dev
+dev: pkged.go
+	go run .
+
+# pack ui into Go
+pkged.go: ui/build/.gitkeep
+	pkger
+
+# rebuild ui
+.PHONY: react
+react:
 	cd ui && yarn build
