@@ -4,6 +4,8 @@ import { Component } from "react";
 import Axios from "axios";
 import queryString from "query-string";
 
+import { SnackbarProvider } from "notistack";
+
 import {
   Paper,
   Container,
@@ -14,9 +16,7 @@ import { Error } from "@material-ui/icons";
 
 import NodeList, { PlaceholderList } from "./NodeList";
 import { TitleBar, Path } from "./Navigation";
-import SnapshotPicker from "./SnapshotPicker";
-
-import { SnackbarProvider, useSnackbar } from "notistack";
+import SnapPicker from "./SnapPicker";
 
 const api =
   process.env.NODE_ENV === "development"
@@ -49,7 +49,6 @@ export default class App extends Component {
       },
 
       (error) => {
-        console.log(JSON.stringify(error));
         this.setState({ loaded: true, error });
       }
     );
@@ -72,36 +71,38 @@ export default class App extends Component {
     const { error, loaded, items } = this.state;
 
     const Skel = (props) => (
-      <Container maxWidth="md">
-        <Paper>
-          <TitleBar>
-            <Paper
-              css={{
-                minHeight: "3em",
-                paddingLeft: "1em",
-                flexGrow: 1,
-                display: "flex",
-                alignItems: "center",
-                marginRight: ".5em",
-              }}
-            >
-              <Path dir={this.props.location.pathname} />{" "}
-            </Paper>
-            <Paper
-              css={{
-                minHeight: "3em",
-                display: "flex",
-                alignItems: "center",
-                paddingLeft: "0.5em",
-                paddingRight: "0.5em",
-              }}
-            >
-              <SnapshotPicker {...this.props} />
-            </Paper>
-          </TitleBar>
-          {props.children}
-        </Paper>
-      </Container>
+      <SnackbarProvider>
+        <Container maxWidth="md">
+          <Paper>
+            <TitleBar>
+              <Paper
+                css={{
+                  minHeight: "3em",
+                  paddingLeft: "1em",
+                  flexGrow: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  marginRight: ".5em",
+                }}
+              >
+                <Path dir={this.props.location.pathname} />{" "}
+              </Paper>
+              <Paper
+                css={{
+                  minHeight: "3em",
+                  display: "flex",
+                  alignItems: "center",
+                  paddingLeft: "0.5em",
+                  paddingRight: "0.5em",
+                }}
+              >
+                <SnapPicker {...this.props} />
+              </Paper>
+            </TitleBar>
+            {props.children}
+          </Paper>
+        </Container>
+      </SnackbarProvider>
     );
 
     if (error) {

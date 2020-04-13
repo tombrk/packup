@@ -8,6 +8,7 @@
     "@material-ui/icons": "^4.0.1",
     "axios": "^0.18.0",
     "date-fns": "^2.0.0-alpha.27",
+    "notistack": "^0.9.9",
     "query-string": "^6.5.0",
     "react": "^16.8.6",
     "react-content-loader": "^4.2.1",
@@ -16,7 +17,7 @@
     "react-scripts": "3.0.1"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "dev": "react-scripts start",
     "build": "react-scripts build && touch build/.gitkeep",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

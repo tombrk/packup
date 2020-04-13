@@ -51,7 +51,7 @@ export const TitleBar = (props) => (
   <AppBar position="static">
     <Toolbar css={{ display: "flex" }}>
       <Typography css={{ marginRight: "1em" }} variant="h6">
-        prestic
+        packUp!
       </Typography>
       {props.children}
     </Toolbar>
