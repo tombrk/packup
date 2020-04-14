@@ -56,7 +56,11 @@ const SnapPicker = ({ history, location }) => {
           })
         );
       } catch (error) {
-        enqueueSnackbar(error.response.data, {
+        const message = error.response
+          ? error.response.data
+          : "Unable to reach backend. Please check your network connection";
+
+        enqueueSnackbar(message, {
           variant: "error",
         });
       }
