@@ -1,20 +1,21 @@
 import React from "react";
-import { Link, useParams, useLocation } from "react-router-dom";
+import { Link as RouterLink, useParams, useLocation } from "react-router-dom";
 import { FileList } from "../components/FileList";
+
+import { Paper, Breadcrumbs, Link, styled } from "@material-ui/core";
+import { Layout } from "./Layout";
 
 /**
  * SnapshotView displays snapshot contents (list of files)
  */
 export const SnapshotView = () => {
   const path = `/${useParams().path || ""}`;
-
   const elems = useLocation().pathname.slice(1).split("/");
 
   return (
-    <div>
-      <PathNav elems={elems}></PathNav>
+    <Layout title={<PathNav elems={elems} />}>
       <FileList path={path}></FileList>
-    </div>
+    </Layout>
   );
 };
 
@@ -25,14 +26,32 @@ export const SnapshotView = () => {
  * @param {String[]} props.elems - current path splitted to individual folder names (`string.split('/')`)
  */
 const PathNav = ({ elems }) => (
-  <div>
-    {elems.map((e, i) => (
-      <div style={{ display: "inline" }} key={i}>
-        <Link to={`/${elems.slice(0, i + 1).join("/")}`} key={i}>
+  <HeaderPaper>
+    <Breadcrumbs>
+      {elems.map((e, i) => (
+        <Link
+          component={RouterLink}
+          key={i}
+          to={`/${elems.slice(0, i + 1).join("/")}`}
+        >
           {e}
         </Link>
-        <span>/</span>
-      </div>
-    ))}
-  </div>
+      ))}
+    </Breadcrumbs>
+  </HeaderPaper>
 );
+
+/**
+ * HeaderPaper is a `Paper` specially styled,
+ * so it renders nicely in the TitleBar
+ * @param {Object} props - React props
+ * @param {JSX.Element} props.children - Component to render
+ */
+const HeaderPaper = styled(Paper)({
+  display: "flex",
+  flexGrow: 1,
+  alignItems: "center",
+  minHeight: "3em",
+  paddingLeft: "0.5em",
+  paddingRight: "0.5em",
+});

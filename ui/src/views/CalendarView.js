@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { addr } from "../api";
 
+import { Layout } from "./Layout";
+
 /**
  * CalendarView is the calendar page to pick the snapshot to view
  */
@@ -28,7 +30,7 @@ export const CalendarView = () => {
   }, []);
 
   return (
-    <div>
+    <Layout>
       <h3>Snapshots:</h3>
       <ul>
         {snapshots.map((s) => (
@@ -37,6 +39,6 @@ export const CalendarView = () => {
           </li>
         ))}
       </ul>
-    </div>
+    </Layout>
   );
 };
