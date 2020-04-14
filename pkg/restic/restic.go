@@ -88,6 +88,10 @@ func (r *Restic) Files(snapshot string, path string, recursive bool) ([]File, er
 			continue
 		}
 
+		if f.Path == path && f.Type != "file" {
+			continue
+		}
+
 		files = append(files, f)
 	}
 
