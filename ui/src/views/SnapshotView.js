@@ -1,20 +1,64 @@
-import React from "react";
-import { Link as RouterLink, useParams, useLocation } from "react-router-dom";
-import { FileList } from "../components/FileList";
+import { Breadcrumbs, IconButton, Link, Paper } from "@material-ui/core";
+import React, { useEffect, useState } from "react";
+import { Link as RouterLink, useLocation, useParams } from "react-router-dom";
 
-import { Paper, Breadcrumbs, Link, styled } from "@material-ui/core";
+import { ArrowBack } from "@material-ui/icons";
+import { FileList } from "../components/FileList";
 import { Layout } from "./Layout";
+import { addr } from "../api";
+import axios from "axios";
+/** @jsx jsx */
+import { jsx } from "@emotion/core";
+import styled from "@emotion/styled";
+import { useTheme } from "@material-ui/core/styles";
 
 /**
  * SnapshotView displays snapshot contents (list of files)
  */
 export const SnapshotView = () => {
   const path = `/${useParams().path || ""}`;
+
+  // path elements for navigation
   const elems = useLocation().pathname.slice(1).split("/");
 
+  // files for FileList
+  const [files, setFiles] = useState([]);
+
+  // load filelist from api
+  useEffect(() => {
+    const fetch = async () => {
+      setFiles([]);
+      try {
+        const result = await axios(`${addr}/files?path=${path}`);
+        setFiles(result.data);
+      } catch (error) {
+        const message = error.response
+          ? error.response.data
+          : "Unable to list files. Please check your backend connection";
+
+        console.error(message);
+      }
+    };
+    fetch();
+  }, [path]);
+
   return (
-    <Layout title={<PathNav elems={elems} />}>
-      <FileList path={path}></FileList>
+    <Layout
+      preTitle={
+        <IconButton
+          to="/"
+          component={RouterLink}
+          css={{ marginRight: useTheme().spacing(2) }}
+          edge="start"
+          color="inherit"
+        >
+          <ArrowBack />
+        </IconButton>
+      }
+      title={<PathNav elems={elems} />}
+      loading={!files.length}
+    >
+      <FileList files={files}></FileList>
     </Layout>
   );
 };

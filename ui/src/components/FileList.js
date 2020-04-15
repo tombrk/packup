@@ -1,38 +1,17 @@
-import React, { useState, useEffect } from "react";
+import { Folder, InsertDriveFile } from "@material-ui/icons";
 import { Link, useLocation } from "react-router-dom";
-import axios from "axios";
-import { addr } from "../api";
-
 import { List, ListItem, ListItemIcon, ListItemText } from "@material-ui/core";
-import { InsertDriveFile, Folder } from "@material-ui/icons";
+import React, { useEffect, useState } from "react";
+
+import { addr } from "../api";
+import axios from "axios";
 
 /**
  *  FileList lists files from a path of a Restic snapshot
  * @param {Object} props - React props
- * @param {string} props.path - Snapshot subpath to display
+ * @param {string} props.files - List of `restic.Node`
  */
-export const FileList = ({ path }) => {
-  const [files, setFiles] = useState([]);
-
-  // load filelist from api
-  useEffect(() => {
-    const fetch = async () => {
-      setFiles([]);
-      try {
-        const result = await axios(`${addr}/files?path=${path}`);
-        setFiles(result.data);
-      } catch (error) {
-        const message = error.response
-          ? error.response.data
-          : "Unable to list files. Please check your backend connection";
-
-        console.error(message);
-      }
-    };
-    fetch();
-  }, [path]);
-
-  // display as unordered list
+export const FileList = ({ files }) => {
   return (
     <List>
       {files.map((f) => {

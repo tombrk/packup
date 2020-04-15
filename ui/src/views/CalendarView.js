@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import axios from "axios";
-import { addr } from "../api";
+import React, { useEffect, useState } from "react";
 
 import { Layout } from "./Layout";
+import { Link } from "react-router-dom";
+import { addr } from "../api";
+import axios from "axios";
 
 /**
  * CalendarView is the calendar page to pick the snapshot to view
@@ -30,7 +30,7 @@ export const CalendarView = () => {
   }, []);
 
   return (
-    <Layout>
+    <Layout loading={!snapshots.length}>
       <h3>Snapshots:</h3>
       <ul>
         {snapshots.map((s) => (

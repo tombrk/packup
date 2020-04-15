@@ -1,22 +1,20 @@
-/** @jsx jsx */
-import { jsx } from "@emotion/core";
-import { Component } from "react";
-import Axios from "axios";
-import queryString from "query-string";
-
-import { SnackbarProvider } from "notistack";
-
 import {
-  Paper,
   Container,
   LinearProgress,
+  Paper,
   Typography,
 } from "@material-ui/core";
-import { Error } from "@material-ui/icons";
-
 import NodeList, { PlaceholderList } from "./NodeList";
-import { TitleBar, Path } from "./Navigation";
+import { Path, TitleBar } from "./Navigation";
+
+import Axios from "axios";
+import { Component } from "react";
+import { Error } from "@material-ui/icons";
+import { SnackbarProvider } from "notistack";
 import SnapPicker from "./SnapPicker";
+/** @jsx jsx */
+import { jsx } from "@emotion/core";
+import queryString from "query-string";
 
 const api =
   process.env.NODE_ENV === "development"

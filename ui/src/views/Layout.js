@@ -1,26 +1,29 @@
-import React from "react";
 import {
   AppBar,
-  Toolbar,
-  styled,
-  Paper,
   Container,
+  LinearProgress,
+  Paper,
+  Toolbar,
   Typography,
+  styled,
 } from "@material-ui/core";
 
 import { Link } from "react-router-dom";
+import React from "react";
 
 /**
  * Layout is the main application layout, used by all view components
  * @param {Object} props - React props
  * @param {JSX.Element} props.children - Component to display in main frame
  * @param {JSX.Element} props.title - Optional component to display in title-bar
+ * @param {Boolean} props.loading - whether to show a linear progress indicator
  */
-export const Layout = ({ children, title }) => {
+export const Layout = ({ children, title, preTitle, loading }) => {
   return (
     <Container maxWidth="md">
       <Paper>
-        <TitleBar>{title}</TitleBar>
+        <TitleBar preTitle={preTitle}>{title}</TitleBar>
+        {loading && <LinearProgress />}
         {children}
       </Paper>
     </Container>
@@ -32,12 +35,14 @@ export const Layout = ({ children, title }) => {
  * @param {Object} props - React props
  * @param {JSX.Element} props.children - Component to render next to the application's name
  */
-const TitleBar = ({ children }) => (
-  <AppBar position="sticky">
+const TitleBar = ({ children, preTitle }) => (
+  <AppBar position="static">
     <Toolbar>
-      <AppTitle variant="h6">
-        <UnstyledLink to="/">packUp!</UnstyledLink>
-      </AppTitle>
+      {preTitle || (
+        <AppTitle variant="h6">
+          <UnstyledLink to="/">packUp!</UnstyledLink>
+        </AppTitle>
+      )}
 
       {children && children}
     </Toolbar>
