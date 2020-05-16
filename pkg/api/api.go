@@ -1,9 +1,12 @@
 package api
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 
@@ -25,6 +28,7 @@ func New(jobs config.Jobs) (http.Handler, error) {
 	r.HandleFunc("/jobs", a.jobsHandler).Methods("GET")
 	r.HandleFunc("/jobs/{job}/snapshots", a.snapshotsHandler).Methods("GET")
 	r.HandleFunc("/jobs/{job}/files", a.filesHandler).Methods("GET")
+	r.HandleFunc("/jobs/{job}/dump", a.dumpHandler).Methods("GET")
 
 	return r, nil
 }
@@ -99,6 +103,41 @@ func (a api) snapshotsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(out))
+}
+
+func (a api) dumpHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	rst, err := a.Job(r)
+	if !handleErr(w, err, http.StatusNotFound) {
+		return
+	}
+
+	snapshot := queryOrDefault(r, "snapshot", "latest")
+	dir := queryOrDefault(r, "path", "/")
+	compress := r.URL.Query().Get("compress") == "true"
+
+	name := filepath.Base(dir)
+	if compress {
+		name += ".tar.gz"
+	}
+
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", name))
+	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+
+	var dw io.Writer = w
+	if compress {
+		zw := gzip.NewWriter(w)
+		defer zw.Close()
+		dw = zw
+	}
+
+	err = rst.Dump(dw, snapshot, dir)
+	if !handle500(w, err) {
+		return
+	}
+
+	return
 }
 
 func handle500(w http.ResponseWriter, err error) bool {
