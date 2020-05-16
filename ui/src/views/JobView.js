@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { addr } from "../api";
 import axios from "axios";
 
-import { List, ListItem, ListItemIcon, ListItemText } from "@material-ui/core";
+import { List, ListItem, ListItemText } from "@material-ui/core";
 
 /**
  * Route is the path this View is expected at
