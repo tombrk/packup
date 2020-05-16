@@ -1,10 +1,9 @@
 import { Folder, InsertDriveFile } from "@material-ui/icons";
 import { Link, useLocation } from "react-router-dom";
 import { List, ListItem, ListItemIcon, ListItemText } from "@material-ui/core";
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 import { addr } from "../api";
-import axios from "axios";
 
 /**
  *  FileList lists files from a path of a Restic snapshot

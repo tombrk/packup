@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { useHistory, useParams } from "react-router-dom";
 
-import axios from "axios";
-import queryString from "query-string";
 import { formatRelative } from "date-fns";
-import { addr } from "./api";
 
-import { Select, MenuItem, Button } from "@material-ui/core";
-import { useSnackbar } from "notistack";
+import { Select, MenuItem } from "@material-ui/core";
 
 /**
  * Picker is the actual MaterialUI component for SnapPicker
@@ -19,7 +16,7 @@ const Picker = ({ items, current, onChange }) => {
   return (
     <Select disabled={items.length === 0} onChange={onChange} value={current}>
       {items.map((s) => (
-        <MenuItem value={s.id} value={s.id}>
+        <MenuItem key={s.id} value={s.id}>
           {formatRelative(new Date(s.time), new Date())}
         </MenuItem>
       ))}
@@ -31,51 +28,22 @@ const Picker = ({ items, current, onChange }) => {
  * SnapPicker is the upper-right `<select>` component for choosing the snapshot.
  * It currently queries it's own data and displays a snackbar if that fails.
  */
-const SnapPicker = ({ history, location }) => {
-  const [data, setData] = useState([]);
-  const qv = queryString.parse(location.search);
-  const { enqueueSnackbar } = useSnackbar();
+const SnapPicker = ({ snapshots, job, path }) => {
+  const data = snapshots.reverse().map((s) => {
+    s.id = s.id.substring(0, 8);
+    return s;
+  });
 
-  const push = (to) => {
-    history.push(
-      `${location.pathname}?${queryString.stringify({
-        ...qv,
-        snapshot: to,
-      })}`
-    );
-  };
-
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const result = await axios(`${addr}/snapshots`);
-        setData(
-          result.data.reverse().map((s) => {
-            s.id = s.id.substring(0, 8);
-            return s;
-          })
-        );
-      } catch (error) {
-        const message = error.response
-          ? error.response.data
-          : "Unable to reach backend. Please check your network connection";
-
-        enqueueSnackbar(message, {
-          variant: "error",
-        });
-      }
-    };
-    fetch();
-  }, []);
+  const history = useHistory();
 
   return (
     <Picker
       current={data.length > 0 ? data[0].id : ""}
       items={data}
       onChange={(e) => {
-        push(e.target.value);
+        history.push(`/${job}/${e.target.value}/${path}`);
       }}
-    ></Picker>
+    />
   );
 };
 

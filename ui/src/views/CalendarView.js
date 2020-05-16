@@ -15,8 +15,6 @@ export const Route = "/";
  * CalendarView is the calendar page to pick the snapshot to view
  */
 export const CalendarView = () => {
-  const [snapshots, setSnapshots] = useState([]);
-
   const [jobs, setJobs] = useState([]);
 
   // load snapshots from api
@@ -24,12 +22,6 @@ export const CalendarView = () => {
     const fetch = async () => {
       try {
         const result = await axios(`${addr}/jobs`);
-        // setSnapshots(
-        //   result.data.reverse().map((s) => {
-        //     s.id = s.id.substring(0, 8);
-        //     return s;
-        //   })
-        // );
         setJobs(
           Object.keys(result.data).map((k) => ({
             name: k,

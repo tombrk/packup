@@ -14,7 +14,7 @@ import { useTheme } from "@material-ui/core/styles";
 import { Layout, AppTitle } from "./Layout";
 import { FileList } from "../components/FileList";
 
-import { SnapshotRoute } from "../UI";
+import SnapPicker from "../SnapPicker";
 
 /**
  * SnapshotView displays snapshot contents (list of files)
@@ -26,13 +26,18 @@ export const SnapshotView = () => {
   // path elements for navigation
   const elems = [snapshot, ...(path || "").split("/")];
 
-  // load filelist from api
+  // component state
   const [files, setFiles] = useState([]);
+  const [snapshots, setSnapshots] = useState([]);
+
+  // load filelist from api
   useEffect(() => {
     const fetch = async () => {
       setFiles([]);
       try {
-        const result = await axios(`${addr}/jobs/${job}/files?path=${rPath}`);
+        const result = await axios(
+          `${addr}/jobs/${job}/files?snapshot=${snapshot}&path=${rPath}`
+        );
         setFiles(result.data);
       } catch (error) {
         const message = error.response
@@ -43,7 +48,25 @@ export const SnapshotView = () => {
       }
     };
     fetch();
-  }, [rPath]);
+  }, [rPath, snapshot, job]);
+
+  // load snapshots from api
+  useEffect(() => {
+    const fetch = async () => {
+      setSnapshots([]);
+      try {
+        const result = await axios(`${addr}/jobs/${job}/snapshots`);
+        setSnapshots(result.data);
+      } catch (error) {
+        const message = error.response
+          ? error.response.data
+          : "Unable to list snapshots. Please check your backend connection";
+
+        console.error(message);
+      }
+    };
+    fetch();
+  }, [job]);
 
   return (
     <Layout
@@ -61,7 +84,18 @@ export const SnapshotView = () => {
           <AppTitle variant="h6">{job}</AppTitle>
         </div>
       }
-      title={<PathNav elems={elems} job={job} />}
+      title={
+        <div css={{ display: "flex", flexDirection: "row", flexGrow: 1 }}>
+          <PathNav elems={elems} job={job} />
+          <HeaderPaper>
+            <SnapPicker
+              job={job}
+              path={path}
+              snapshots={snapshots}
+            ></SnapPicker>
+          </HeaderPaper>
+        </div>
+      }
       loading={!files.length}
     >
       <FileList files={files}></FileList>
@@ -76,7 +110,7 @@ export const SnapshotView = () => {
  * @param {String[]} props.elems - current path splitted to individual folder names (`string.split('/')`)
  */
 const PathNav = ({ elems, job }) => (
-  <HeaderPaper>
+  <HeaderPaper css={{ flexGrow: 1 }}>
     <Breadcrumbs>
       {elems.map((e, i) => (
         <Link
@@ -99,9 +133,9 @@ const PathNav = ({ elems, job }) => (
  */
 const HeaderPaper = styled(Paper)({
   display: "flex",
-  flexGrow: 1,
   alignItems: "center",
   minHeight: "3em",
   paddingLeft: "0.5em",
   paddingRight: "0.5em",
+  marginLeft: "0.5em",
 });
