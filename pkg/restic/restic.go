@@ -11,10 +11,17 @@ import (
 )
 
 type Restic struct {
+	Repo     string
+	Password string
 }
 
-func New() *Restic {
-	return &Restic{}
+func New(repo, pass string) *Restic {
+	r := &Restic{
+		Repo:     repo,
+		Password: pass,
+	}
+
+	return r
 }
 
 type Snapshot struct {

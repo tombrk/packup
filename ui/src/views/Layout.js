@@ -53,7 +53,7 @@ const TitleBar = ({ children, preTitle }) => (
  * AppTitle is a Typography that has a slight margin to the right
  * @param {Object} props - `Link` props
  */
-const AppTitle = styled(Typography)({
+export const AppTitle = styled(Typography)({
   marginRight: "1em",
 });
 

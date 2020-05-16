@@ -1,8 +1,11 @@
+import { Route, BrowserRouter as Router, Switch } from "react-router-dom";
 import React from "react";
-import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 
 import { CalendarView } from "./views/CalendarView";
 import { SnapshotView } from "./views/SnapshotView";
+
+export const SnapshotRoute = "/:job/:snapshot/:path+";
+export const JobsRoute = "/";
 
 /**
  * UI is the main application user interface
@@ -11,12 +14,12 @@ export const UI = () => (
   <Router>
     <Switch>
       {/* Snapshot contents (files) view */}
-      <Route path={["/:snapshot/:path+", "/:snapshot"]}>
+      <Route path={[SnapshotRoute, "/:job/:snapshot"]}>
         <SnapshotView />
       </Route>
 
       {/* index: Full size snapshot picker */}
-      <Route path="/">
+      <Route path={JobsRoute}>
         <CalendarView />
       </Route>
     </Switch>

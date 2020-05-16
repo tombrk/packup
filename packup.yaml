@@ -1,0 +1,4 @@
+jobs:
+  local:
+    repo: ./test
+    password: test

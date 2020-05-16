@@ -1,35 +1,38 @@
-import { Breadcrumbs, IconButton, Link, Paper } from "@material-ui/core";
-import React, { useEffect, useState } from "react";
-import { Link as RouterLink, useLocation, useParams } from "react-router-dom";
-
-import { ArrowBack } from "@material-ui/icons";
-import { FileList } from "../components/FileList";
-import { Layout } from "./Layout";
-import { addr } from "../api";
-import axios from "axios";
 /** @jsx jsx */
 import { jsx } from "@emotion/core";
 import styled from "@emotion/styled";
+
+import { useEffect, useState } from "react";
+import { Link as RouterLink, useParams } from "react-router-dom";
+import axios from "axios";
+import { addr } from "../api";
+
+import { Breadcrumbs, IconButton, Link, Paper } from "@material-ui/core";
+import { ArrowBack } from "@material-ui/icons";
 import { useTheme } from "@material-ui/core/styles";
+
+import { Layout, AppTitle } from "./Layout";
+import { FileList } from "../components/FileList";
+
+import { SnapshotRoute } from "../UI";
 
 /**
  * SnapshotView displays snapshot contents (list of files)
  */
 export const SnapshotView = () => {
-  const path = `/${useParams().path || ""}`;
+  const { job, snapshot, path } = useParams();
+  const rPath = `/${useParams().path || ""}`;
 
   // path elements for navigation
-  const elems = useLocation().pathname.slice(1).split("/");
-
-  // files for FileList
-  const [files, setFiles] = useState([]);
+  const elems = [snapshot, ...(path || "").split("/")];
 
   // load filelist from api
+  const [files, setFiles] = useState([]);
   useEffect(() => {
     const fetch = async () => {
       setFiles([]);
       try {
-        const result = await axios(`${addr}/files?path=${path}`);
+        const result = await axios(`${addr}/jobs/${job}/files?path=${rPath}`);
         setFiles(result.data);
       } catch (error) {
         const message = error.response
@@ -40,22 +43,25 @@ export const SnapshotView = () => {
       }
     };
     fetch();
-  }, [path]);
+  }, [rPath]);
 
   return (
     <Layout
       preTitle={
-        <IconButton
-          to="/"
-          component={RouterLink}
-          css={{ marginRight: useTheme().spacing(2) }}
-          edge="start"
-          color="inherit"
-        >
-          <ArrowBack />
-        </IconButton>
+        <div css={{ display: "flex", alignItems: "center" }}>
+          <IconButton
+            to="/"
+            component={RouterLink}
+            css={{ marginRight: useTheme().spacing(1) }}
+            edge="start"
+            color="inherit"
+          >
+            <ArrowBack />
+          </IconButton>
+          <AppTitle variant="h6">{job}</AppTitle>
+        </div>
       }
-      title={<PathNav elems={elems} />}
+      title={<PathNav elems={elems} job={job} />}
       loading={!files.length}
     >
       <FileList files={files}></FileList>
@@ -69,14 +75,14 @@ export const SnapshotView = () => {
  * @param {Object} props - React props
  * @param {String[]} props.elems - current path splitted to individual folder names (`string.split('/')`)
  */
-const PathNav = ({ elems }) => (
+const PathNav = ({ elems, job }) => (
   <HeaderPaper>
     <Breadcrumbs>
       {elems.map((e, i) => (
         <Link
           component={RouterLink}
           key={i}
-          to={`/${elems.slice(0, i + 1).join("/")}`}
+          to={`/${job}/${elems.slice(0, i + 1).join("/")}`}
         >
           {e}
         </Link>

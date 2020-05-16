@@ -5,25 +5,53 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gorilla/mux"
+
+	"github.com/sh0rez/packup/pkg/config"
 	"github.com/sh0rez/packup/pkg/restic"
 )
 
 type api struct {
-	rst *restic.Restic
+	jobs config.Jobs
 }
 
-func New() http.Handler {
-	var mux = http.NewServeMux()
+func New(jobs config.Jobs) (http.Handler, error) {
+	var r = mux.NewRouter()
 
 	a := api{
-		rst: restic.New(),
+		jobs: jobs,
 	}
 
-	mux.HandleFunc("/snapshots", a.snapshotsHandler)
-	mux.HandleFunc("/files", a.filesHandler)
-	// mux.HandleFunc("/dump", a.dumpHandler)
+	r.HandleFunc("/jobs", a.jobsHandler).Methods("GET")
+	r.HandleFunc("/jobs/{job}/snapshots", a.snapshotsHandler).Methods("GET")
+	r.HandleFunc("/jobs/{job}/files", a.filesHandler).Methods("GET")
 
-	return mux
+	return r, nil
+}
+
+func (a api) Job(r *http.Request) (*restic.Restic, error) {
+	name, ok := mux.Vars(r)["job"]
+	if !ok {
+		return nil, fmt.Errorf("URL path field 'job' missing from request")
+	}
+
+	job, ok := a.jobs[name]
+	if !ok {
+		return nil, fmt.Errorf("No job named '%s'. Please check your config", name)
+	}
+
+	return restic.New(job.Repo, job.Password), nil
+}
+
+func (a api) jobsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	data, err := json.Marshal(a.jobs)
+	if !handle500(w, err) {
+		return
+	}
+
+	fmt.Fprint(w, string(data))
 }
 
 // filesHandler lists snapshot contents
@@ -33,7 +61,12 @@ func (a api) filesHandler(w http.ResponseWriter, r *http.Request) {
 	snapshot := queryOrDefault(r, "snapshot", "latest")
 	path := queryOrDefault(r, "path", "/")
 
-	files, err := a.rst.Files(snapshot, path, false)
+	rst, err := a.Job(r)
+	if !handleErr(w, err, http.StatusNotFound) {
+		return
+	}
+
+	files, err := rst.Files(snapshot, path, false)
 	if !handle500(w, err) {
 		return
 	}
@@ -50,7 +83,12 @@ func (a api) filesHandler(w http.ResponseWriter, r *http.Request) {
 func (a api) snapshotsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	snapshots, err := a.rst.Snapshots()
+	rst, err := a.Job(r)
+	if !handleErr(w, err, http.StatusNotFound) {
+		return
+	}
+
+	snapshots, err := rst.Snapshots()
 	if !handle500(w, err) {
 		return
 	}
