@@ -1,7 +1,7 @@
 import { Route, BrowserRouter as Router, Switch } from "react-router-dom";
 import React from "react";
 
-import { CalendarView } from "./views/CalendarView";
+import { JobView } from "./views/JobView";
 import { SnapshotView } from "./views/SnapshotView";
 
 export const SnapshotRoute = "/:job/:snapshot/:path+";
@@ -20,7 +20,7 @@ export const UI = () => (
 
       {/* index: Full size snapshot picker */}
       <Route path={JobsRoute}>
-        <CalendarView />
+        <JobView />
       </Route>
     </Switch>
   </Router>

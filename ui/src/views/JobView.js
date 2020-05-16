@@ -5,6 +5,8 @@ import { Link } from "react-router-dom";
 import { addr } from "../api";
 import axios from "axios";
 
+import { List, ListItem, ListItemIcon, ListItemText } from "@material-ui/core";
+
 /**
  * Route is the path this View is expected at
  * @type {string}
@@ -14,7 +16,7 @@ export const Route = "/";
 /**
  * CalendarView is the calendar page to pick the snapshot to view
  */
-export const CalendarView = () => {
+export const JobView = () => {
   const [jobs, setJobs] = useState([]);
 
   // load snapshots from api
@@ -38,14 +40,18 @@ export const CalendarView = () => {
 
   return (
     <Layout loading={!jobs.length}>
-      <h3>Jobs:</h3>
-      <ul>
+      <List>
         {jobs.map((s) => (
-          <li key={s.name}>
-            <Link to={`${s.name}/latest`}>{s.name}</Link>
-          </li>
+          <ListItem
+            key={s.name}
+            button
+            component={Link}
+            to={`${s.name}/latest`}
+          >
+            <ListItemText>{s.name}</ListItemText>
+          </ListItem>
         ))}
-      </ul>
+      </List>
     </Layout>
   );
 };
