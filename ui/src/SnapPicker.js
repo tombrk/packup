@@ -29,10 +29,12 @@ const Picker = ({ items, current, onChange }) => {
  * It currently queries it's own data and displays a snackbar if that fails.
  */
 const SnapPicker = ({ snapshots, job, path }) => {
-  const data = snapshots.reverse().map((s) => {
-    s.id = s.id.substring(0, 8);
-    return s;
-  });
+  const data = snapshots
+    .map((s) => {
+      s.id = s.id.substring(0, 8);
+      return s;
+    })
+    .reverse();
 
   const history = useHistory();
 
