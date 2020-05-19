@@ -13,7 +13,9 @@ type Config struct {
 type Job struct {
 	Repo     string `yaml:"repo" json:"repo"`
 	Password string `yaml:"password" json:"-"`
+
 	Schedule string `yaml:"schedule" json:"schedule,omitempty"`
+	Source   string `yaml:"source" json:"-"`
 }
 
 type Jobs map[string]Job
