@@ -32,17 +32,32 @@ func (r *Restic) cmd(action string, argv []string) *exec.Cmd {
 	return cmd
 }
 
+type ExecError struct {
+	err    error
+	stderr string
+}
+
+func (e ExecError) Error() string {
+	return strings.TrimSpace(fmt.Sprintf("%s.\n\n%s", e.err.Error(), e.stderr))
+}
+
 func (r *Restic) exec(action string, argv []string) ([]byte, error) {
 	cmd := r.cmd(action, argv)
-	cmd.Stderr = os.Stderr
 
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
 
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		return nil, ExecError{
+			err:    err,
+			stderr: stderr.String(),
+		}
 	}
-	return buf.Bytes(), nil
+
+	return stdout.Bytes(), nil
 }
 
 // environment is a helper type for manipulating os.Environ() more easily

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 
@@ -133,8 +134,8 @@ func (a api) dumpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = rst.Dump(dw, snapshot, dir)
-	if !handle500(w, err) {
-		return
+	if err != nil {
+		log.Printf("dumping '%s': %s %T", dir, err, err)
 	}
 
 	return
