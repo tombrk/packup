@@ -11,6 +11,8 @@ import { Breadcrumbs, IconButton, Link, Paper } from "@material-ui/core";
 import { ArrowBack } from "@material-ui/icons";
 import { useTheme } from "@material-ui/core/styles";
 
+import { useSnackbar } from "notistack";
+
 import { Layout, AppTitle } from "./Layout";
 import { FileList } from "../components/FileList";
 
@@ -30,6 +32,8 @@ export const SnapshotView = () => {
   const [files, setFiles] = useState([]);
   const [snapshots, setSnapshots] = useState([]);
 
+  const { enqueueSnackbar } = useSnackbar();
+
   // load filelist from api
   useEffect(() => {
     const fetch = async () => {
@@ -42,9 +46,9 @@ export const SnapshotView = () => {
       } catch (error) {
         const message = error.response
           ? error.response.data
-          : "Unable to list files. Please check your backend connection";
+          : "Backend connection failed";
 
-        console.error(message);
+        enqueueSnackbar(`Loading files: ${message}`, { variant: "error" });
       }
     };
     fetch();
@@ -60,9 +64,9 @@ export const SnapshotView = () => {
       } catch (error) {
         const message = error.response
           ? error.response.data
-          : "Unable to list snapshots. Please check your backend connection";
+          : "Backend connection failed";
 
-        console.error(message);
+        enqueueSnackbar(`Loading snapshots: ${message}`, { variant: "error" });
       }
     };
     fetch();
@@ -92,6 +96,7 @@ export const SnapshotView = () => {
               job={job}
               path={path}
               snapshots={snapshots}
+              current={snapshot}
             ></SnapPicker>
           </HeaderPaper>
         </div>

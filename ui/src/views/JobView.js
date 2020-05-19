@@ -7,6 +7,8 @@ import axios from "axios";
 
 import { List, ListItem, ListItemText } from "@material-ui/core";
 
+import { useSnackbar } from "notistack";
+
 /**
  * Route is the path this View is expected at
  * @type {string}
@@ -18,6 +20,8 @@ export const Route = "/";
  */
 export const JobView = () => {
   const [jobs, setJobs] = useState([]);
+
+  const { enqueueSnackbar } = useSnackbar();
 
   // load snapshots from api
   useEffect(() => {
@@ -31,7 +35,10 @@ export const JobView = () => {
           }))
         );
       } catch (error) {
-        console.error(error);
+        const message = error.response
+          ? error.response.data
+          : "Backend connection failed";
+        enqueueSnackbar(`Loading jobs: ${message}`, { variant: "error" });
       }
     };
 

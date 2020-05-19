@@ -1,9 +1,12 @@
 import React from "react";
 import { useHistory } from "react-router-dom";
 
-import { formatRelative } from "date-fns";
-
 import { Select, MenuItem } from "@material-ui/core";
+
+import TimeAgo from "javascript-time-ago";
+import en from "javascript-time-ago/locale/en";
+
+TimeAgo.addLocale(en);
 
 /**
  * Picker is the actual MaterialUI component for SnapPicker
@@ -13,11 +16,12 @@ import { Select, MenuItem } from "@material-ui/core";
  * @param {Function} props.onChange - `onChange` handler
  */
 const Picker = ({ items, current, onChange }) => {
+  const timeAgo = new TimeAgo("en-US");
   return (
     <Select disabled={items.length === 0} onChange={onChange} value={current}>
       {items.map((s) => (
         <MenuItem key={s.id} value={s.id}>
-          {formatRelative(new Date(s.time), new Date())}
+          {timeAgo.format(new Date(s.time), "twitter")}
         </MenuItem>
       ))}
     </Select>
@@ -28,7 +32,7 @@ const Picker = ({ items, current, onChange }) => {
  * SnapPicker is the upper-right `<select>` component for choosing the snapshot.
  * It currently queries it's own data and displays a snackbar if that fails.
  */
-const SnapPicker = ({ snapshots, job, path }) => {
+const SnapPicker = ({ snapshots, job, path, current }) => {
   const data = snapshots
     .map((s) => {
       s.id = s.id.substring(0, 8);
@@ -38,12 +42,20 @@ const SnapPicker = ({ snapshots, job, path }) => {
 
   const history = useHistory();
 
+  if (current === "latest") {
+    current = data[0]?.id;
+  }
+
   return (
     <Picker
-      current={data.length > 0 ? data[0].id : ""}
+      current={data.length > 0 ? current : ""}
       items={data}
       onChange={(e) => {
-        history.push(`/${job}/${e.target.value}/${path}`);
+        let dest = `/${job}/${e.target.value}`;
+        if (path) {
+          dest += `/${path}`;
+        }
+        history.push(dest);
       }}
     />
   );
