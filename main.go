@@ -11,6 +11,7 @@ import (
 
 	"github.com/sh0rez/packup/pkg/api"
 	"github.com/sh0rez/packup/pkg/config"
+	"github.com/sh0rez/packup/pkg/metrics"
 )
 
 var Version string = "dev"
@@ -41,6 +42,9 @@ func main() {
 		// register ui
 		spa := &spaFs{pkged: pkger.Dir("/ui/build")}
 		http.Handle("/", http.FileServer(spa))
+
+		// metrics
+		http.Handle("/metrics", metrics.Server(cfg.Jobs))
 
 		log.Println("Listening on :2112")
 		if err := http.ListenAndServe(":2112", nil); err != nil {
