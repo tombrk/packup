@@ -12,7 +12,7 @@ RUN make static
 
 FROM alpine
 COPY --from=builder /app/packup /usr/local/bin
-RUN apk add restic
+RUN apk add restic coreutils
 WORKDIR /backups
 ENTRYPOINT ["/usr/local/bin/packup"]
 CMD ["--config=/etc/packup/packup.yaml"]

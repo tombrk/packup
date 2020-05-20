@@ -39,12 +39,12 @@ func main() {
 		// register api
 		http.Handle("/api/v1/", http.StripPrefix("/api/v1", apiHandler))
 
+		// register metrics
+		http.Handle("/metrics", metrics.Server(cfg.Jobs))
+
 		// register ui
 		spa := &spaFs{pkged: pkger.Dir("/ui/build")}
 		http.Handle("/", http.FileServer(spa))
-
-		// metrics
-		http.Handle("/metrics", metrics.Server(cfg.Jobs))
 
 		log.Println("Listening on :2112")
 		if err := http.ListenAndServe(":2112", nil); err != nil {

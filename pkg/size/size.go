@@ -1,28 +1,28 @@
 package size
 
 import (
-	"os"
-	"path/filepath"
+	"bytes"
+	"strconv"
+	"strings"
+
+	"os/exec"
 )
 
 // Size reports the size of that directory
 func Size(dir string) (int64, error) {
-	n := int64(0)
-	err := filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
+	cmd := exec.Command("du", "--bytes", "--summarize", dir)
+	var out bytes.Buffer
+	cmd.Stdout = &out
 
-		if !fi.IsDir() {
-			n += fi.Size()
-		}
+	if err := cmd.Run(); err != nil {
+		return 0, err
+	}
 
-		return nil
-	})
-
+	s := strings.Fields(out.String())[0]
+	i, err := strconv.Atoi(s)
 	if err != nil {
 		return 0, err
 	}
 
-	return n, nil
+	return int64(i), nil
 }
