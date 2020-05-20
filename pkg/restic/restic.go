@@ -14,7 +14,7 @@ type Restic struct {
 	Password string
 }
 
-func New(repo, pass string) *Restic {
+func New(repo, pass string, job string) *Restic {
 	return &Restic{
 		Repo:     repo,
 		Password: pass,

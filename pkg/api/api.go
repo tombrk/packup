@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"path/filepath"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
 
 	"github.com/sh0rez/packup/pkg/config"
 	"github.com/sh0rez/packup/pkg/restic"
@@ -19,7 +19,7 @@ type api struct {
 	jobs config.Jobs
 }
 
-func New(jobs config.Jobs) (http.Handler, error) {
+func New(jobs config.Jobs) http.Handler {
 	var r = mux.NewRouter()
 
 	a := api{
@@ -31,7 +31,7 @@ func New(jobs config.Jobs) (http.Handler, error) {
 	r.HandleFunc("/jobs/{job}/files", a.filesHandler).Methods("GET")
 	r.HandleFunc("/jobs/{job}/dump", a.dumpHandler).Methods("GET")
 
-	return r, nil
+	return r
 }
 
 func (a api) Job(r *http.Request) (*restic.Restic, error) {
@@ -45,7 +45,7 @@ func (a api) Job(r *http.Request) (*restic.Restic, error) {
 		return nil, fmt.Errorf("No job named '%s'. Please check your config", name)
 	}
 
-	return restic.New(job.Repo, job.Password), nil
+	return restic.New(job.Repo, job.Password, name), nil
 }
 
 func (a api) jobsHandler(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +135,10 @@ func (a api) dumpHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = rst.Dump(dw, snapshot, dir)
 	if err != nil {
-		log.Printf("dumping '%s': %s %T", dir, err, err)
+		log.Error().
+			Str("snapshot", snapshot).
+			Str("path", dir).
+			Msg("Failed to retrieve file")
 	}
 
 	return

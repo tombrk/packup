@@ -2,12 +2,16 @@ package config
 
 import (
 	"io/ioutil"
+	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
 	Jobs Jobs `yaml:"jobs"`
+
+	API bool `yaml:"api"`
+	UI  bool `yaml:"ui"`
 }
 
 type Job struct {
@@ -21,9 +25,22 @@ type Job struct {
 type Jobs map[string]Job
 
 func Load(data []byte) (*Config, error) {
-	var config Config
+	config := Config{
+		UI:  true,
+		API: true,
+	}
+
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, err
+	}
+
+	for k, v := range config.Jobs {
+		repo, err := filepath.Abs(v.Repo)
+		if err != nil {
+			return nil, err
+		}
+		v.Repo = repo
+		config.Jobs[k] = v
 	}
 
 	return &config, nil
