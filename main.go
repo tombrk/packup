@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-clix/cli"
 	"github.com/markbates/pkger"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
 	"github.com/rs/zerolog"
@@ -65,7 +66,7 @@ func main() {
 
 			// repo metrics if locally available
 			if fi, err := os.Stat(job.Repo); !os.IsNotExist(err) && fi.IsDir() {
-				metrics.WatchDir(name, job)
+				prometheus.MustRegister(&metrics.RepoCollector{Name: name, Job: job})
 				watching = append(watching, name)
 			}
 
