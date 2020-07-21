@@ -8,13 +8,13 @@ import (
 
 	"github.com/go-clix/cli"
 	"github.com/markbates/pkger"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh/terminal"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sh0rez/packup/pkg/api"
 	"github.com/sh0rez/packup/pkg/config"
 	"github.com/sh0rez/packup/pkg/metrics"
@@ -59,15 +59,15 @@ func main() {
 
 		// scheduler and job metrics
 		c := cron.New()
-		var watching, scheduled []string
+		var scheduled []string
+		watcher := make(metrics.RepoCollector)
 		for name, job := range cfg.Jobs {
 			job := job // <3 Go!
 			log := log.With().Str("job", name).Logger()
 
 			// repo metrics if locally available
 			if fi, err := os.Stat(job.Repo); !os.IsNotExist(err) && fi.IsDir() {
-				prometheus.MustRegister(&metrics.RepoCollector{Name: name, Job: job})
-				watching = append(watching, name)
+				watcher[name] = job
 			}
 
 			// schedule backups if source defined
@@ -92,9 +92,10 @@ func main() {
 		}
 
 		// register prometheus metrics
+		prometheus.MustRegister(watcher)
 		http.Handle("/metrics", promhttp.Handler())
-		if len(watching) != 0 {
-			log.Info().Strs("jobs", watching).Msg("Exposing repository metrics at /metrics")
+		if len(watcher) != 0 {
+			log.Info().Strs("jobs", watcher.Jobs()).Msg("Exposing repository metrics at /metrics")
 		}
 
 		// register ui (must be last)

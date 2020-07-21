@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"sync"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 
@@ -10,12 +12,9 @@ import (
 
 const Namespace = "packup"
 
-type RepoCollector struct {
-	Name string
-	Job  config.Job
-}
+type RepoCollector map[string]config.Job
 
-func (r *RepoCollector) Describe(d chan<- *prometheus.Desc) {
+func (r RepoCollector) Describe(d chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(r, d)
 }
 
@@ -26,21 +25,38 @@ var (
 		[]string{"name"}, nil,
 	)
 	lastSnapshotSecondsDesc = prometheus.NewDesc(
-		Namespace+"last_snapshot_seconds",
+		Namespace+"_last_snapshot_seconds",
 		"UNIX seconds of the last successful snapshot",
 		[]string{"name"}, nil,
 	)
 )
 
-func (r *RepoCollector) Collect(c chan<- prometheus.Metric) {
-	rst := restic.New(r.Job.Repo, r.Job.Password, r.Name)
-	log := log.With().Str("job", r.Name).Logger()
+func (r RepoCollector) Collect(c chan<- prometheus.Metric) {
+	var wg sync.WaitGroup
+	for name, job := range r {
+		wg.Add(1)
+		go func() {
+			rst := restic.New(job.Repo, job.Password, name)
+			log := log.With().Str("job", name).Logger()
 
-	s, err := rst.Snapshots()
-	if err != nil {
-		log.Error().Err(err).Msg("Listing snapshots failed")
+			s, err := rst.Snapshots()
+			if err != nil {
+				log.Error().Err(err).Msg("Listing snapshots failed")
+				return
+			}
+
+			c <- prometheus.MustNewConstMetric(snapshotsTotalDesc, prometheus.GaugeValue, float64(len(s)), name)
+			c <- prometheus.MustNewConstMetric(lastSnapshotSecondsDesc, prometheus.GaugeValue, float64(s[len(s)-1].Time.Unix()), name)
+			wg.Done()
+		}()
+		wg.Wait()
 	}
+}
 
-	c <- prometheus.MustNewConstMetric(snapshotsTotalDesc, prometheus.GaugeValue, float64(len(s)), r.Name)
-	c <- prometheus.MustNewConstMetric(lastSnapshotSecondsDesc, prometheus.GaugeValue, float64(s[len(s)-1].Time.Unix()), r.Name)
+func (r RepoCollector) Jobs() []string {
+	keys := make([]string, 0, len(r))
+	for k := range r {
+		keys = append(keys, k)
+	}
+	return keys
 }
