@@ -7,14 +7,13 @@ import (
 	"os"
 
 	"github.com/go-clix/cli"
-	"github.com/markbates/pkger"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sh0rez/packup/pkg/api"
 	"github.com/sh0rez/packup/pkg/config"
 	"github.com/sh0rez/packup/pkg/metrics"
@@ -100,7 +99,7 @@ func main() {
 
 		// register ui (must be last)
 		if cfg.UI {
-			spa := &spaFs{pkged: pkger.Dir("/ui/build")}
+			spa := &spaFs{pkged: http.FS(uiFs)}
 			http.Handle("/", http.FileServer(spa))
 			log.Info().Msg("Serving web-ui at /")
 		}
