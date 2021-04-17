@@ -38,6 +38,7 @@ func main() {
 
 	configFile := cmd.Flags().String("config", "packup.yaml", "YAML config file")
 	verbose := cmd.Flags().BoolP("verbose", "v", false, "Print debug info")
+	listen := cmd.Flags().String("listen", ":9763", "Network address to listen on")
 
 	cmd.Run = func(cmd *cli.Command, args []string) error {
 		if *verbose {
@@ -104,8 +105,8 @@ func main() {
 			log.Info().Msg("Serving web-ui at /")
 		}
 
-		log.Info().Msg("Listening on :2112")
-		if err := http.ListenAndServe(":2112", nil); err != nil {
+		log.Info().Msgf("Listening on %s", *listen)
+		if err := http.ListenAndServe(*listen, nil); err != nil {
 			return err
 		}
 
