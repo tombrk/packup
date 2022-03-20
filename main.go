@@ -9,27 +9,18 @@ import (
 	"github.com/go-clix/cli"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/robfig/cron/v3"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/sh0rez/packup/pkg/api"
 	"github.com/sh0rez/packup/pkg/config"
+	"github.com/sh0rez/packup/pkg/logs"
 	"github.com/sh0rez/packup/pkg/metrics"
-	"github.com/sh0rez/packup/pkg/restic"
 )
 
 var Version string = "dev"
 
-func main() {
-	// setup logger
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if terminal.IsTerminal(int(os.Stdout.Fd())) {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	}
+var log = logs.Logger()
 
+func main() {
 	cmd := &cli.Command{
 		Use:     "packup-server",
 		Short:   "Easy and efficient backups using Restic",
@@ -42,7 +33,7 @@ func main() {
 
 	cmd.Run = func(cmd *cli.Command, args []string) error {
 		if *verbose {
-			zerolog.SetGlobalLevel(zerolog.DebugLevel)
+			logs.Verbose(true)
 			log.Debug().Msg("Enabling debug logs")
 		}
 
@@ -57,38 +48,15 @@ func main() {
 			http.Handle("/api/v1/", http.StripPrefix("/api/v1", api.New(cfg.Jobs)))
 		}
 
-		// scheduler and job metrics
-		c := cron.New()
-		var scheduled []string
+		// job metrics
 		watcher := make(metrics.RepoCollector)
 		for name, job := range cfg.Jobs {
 			job := job // <3 Go!
-			log := log.With().Str("job", name).Logger()
 
 			// repo metrics if locally available
 			if fi, err := os.Stat(job.Repo); !os.IsNotExist(err) && fi.IsDir() {
 				watcher[name] = job
 			}
-
-			// schedule backups if source defined
-			if job.Source == "" {
-				continue
-			}
-
-			rst := restic.New(job.Repo, job.Password, name)
-			c.AddFunc(job.Schedule, func() {
-				log.Info().Msg("Starting backup")
-				if err := rst.Backup(job.Source, nil); err != nil {
-					log.Error().Err(err).Msg("Backup failed")
-				}
-			})
-
-			scheduled = append(scheduled, name)
-		}
-
-		c.Start()
-		if len(scheduled) != 0 {
-			log.Info().Strs("jobs", scheduled).Msg("Starting scheduler")
 		}
 
 		// register prometheus metrics

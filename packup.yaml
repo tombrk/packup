@@ -2,3 +2,5 @@ jobs:
   local:
     repo: ./test
     password: test
+    source: { exec: ./prepare.sh }
+    schedule: "*/1 * * * *"

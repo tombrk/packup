@@ -34,7 +34,7 @@ func New(jobs config.Jobs) http.Handler {
 	return r
 }
 
-func (a api) Job(r *http.Request) (*restic.Restic, error) {
+func (a api) job(r *http.Request) (*restic.Restic, error) {
 	name, ok := mux.Vars(r)["job"]
 	if !ok {
 		return nil, fmt.Errorf("URL path field 'job' missing from request")
@@ -45,7 +45,7 @@ func (a api) Job(r *http.Request) (*restic.Restic, error) {
 		return nil, fmt.Errorf("No job named '%s'. Please check your config", name)
 	}
 
-	return restic.New(job.Repo, job.Password, name), nil
+	return restic.New(job.Repo, job.Password)
 }
 
 func (a api) jobsHandler(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +66,7 @@ func (a api) filesHandler(w http.ResponseWriter, r *http.Request) {
 	snapshot := queryOrDefault(r, "snapshot", "latest")
 	path := queryOrDefault(r, "path", "/")
 
-	rst, err := a.Job(r)
+	rst, err := a.job(r)
 	if !handleErr(w, err, http.StatusNotFound) {
 		return
 	}
@@ -88,7 +88,7 @@ func (a api) filesHandler(w http.ResponseWriter, r *http.Request) {
 func (a api) snapshotsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	rst, err := a.Job(r)
+	rst, err := a.job(r)
 	if !handleErr(w, err, http.StatusNotFound) {
 		return
 	}
@@ -109,7 +109,7 @@ func (a api) snapshotsHandler(w http.ResponseWriter, r *http.Request) {
 func (a api) dumpHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	rst, err := a.Job(r)
+	rst, err := a.job(r)
 	if !handleErr(w, err, http.StatusNotFound) {
 		return
 	}

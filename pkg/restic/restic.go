@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/sh0rez/packup/pkg/exec"
 )
 
 type Restic struct {
@@ -14,20 +16,35 @@ type Restic struct {
 	Password string
 }
 
-func New(repo, pass string, job string) *Restic {
-	return &Restic{
+func New(repo, pass string) (*Restic, error) {
+	_, err := os.Stat(repo)
+	if err != nil && !os.IsNotExist(err) {
+		repo, err = filepath.Abs(repo)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	r := &Restic{
 		Repo:     repo,
 		Password: pass,
 	}
+	return r, nil
 }
 
-func (r *Restic) cmd(action string, argv []string) *exec.Cmd {
-	cmd := exec.Command("restic", append([]string{action}, argv...)...)
+const Bin = "restic"
 
-	env := newEnv(os.Environ())
-	env["RESTIC_PASSWORD"] = r.Password
-	env["RESTIC_REPOSITORY"] = r.Repo
-	cmd.Env = env.render()
+const (
+	EnvPrefix = "RESTIC_"
+
+	EnvPass = EnvPrefix + "PASSWORD"
+	EnvRepo = EnvPrefix + "REPOSITORY"
+)
+
+func (r *Restic) cmd(action string, argv []string) exec.Cmd {
+	cmd := exec.Command(Bin, append([]string{action}, argv...)...)
+	cmd.Env[EnvRepo] = r.Repo
+	cmd.Env[EnvPass] = r.Password
 
 	return cmd
 }

@@ -14,21 +14,34 @@ type Source struct {
 }
 
 func (s Source) Dir() (string, error) {
+	if s.Empty() {
+		return "", ErrorNoSource
+	}
+
+	path := s.Path
 	if s.Exec != "" {
-		return s.exec()
+		var err error
+		path, err = s.exec()
+		if err != nil {
+			return "", err
+		}
 	}
 
-	if s.Path != "" {
-		return s.Path, nil
+	if _, err := os.Stat(path); err != nil {
+		return "", err
 	}
 
-	return "", ErrorNoSource
+	return path, nil
+}
+
+func (s Source) Empty() bool {
+	return s.Exec == "" && s.Path == ""
 }
 
 var ErrorNoSource = errors.New("No source available, as 'path' and 'exec' both unset")
 
 func (s Source) exec() (string, error) {
-	cmd := exec.Command("/bin/bash", "-c", s.Exec)
+	cmd := exec.Command("/bin/sh", "-c", s.Exec)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = os.Stderr

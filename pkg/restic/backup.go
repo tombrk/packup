@@ -4,21 +4,28 @@ import (
 	"bytes"
 )
 
+type Msg struct {
+	Type string `json:"message_type"`
+}
+
 type BackupStatus struct {
-	FilesDiscovered int `json:"total_files"`
-	FilesWritten    int `json:"files_done"`
+	FilesTotal int `json:"total_files"`
+	FilesDone  int `json:"files_done"`
 
-	BytesDiscovered int `json:"total_bytes"`
-	BytesWritten    int `json:"bytes_done"`
+	BytesTotal int `json:"total_bytes"`
+	BytesDone  int `json:"bytes_done"`
 }
 
-type BackupSummary struct {
-	BytesAdded int `json:"data_added"`
-}
+func (r *Restic) Backup(path string) error {
+	if path == "" {
+		panic("path must not be empty")
+	}
 
-func (r *Restic) Backup(path string, status func(BackupStatus)) error {
 	cmd := r.cmd("backup", []string{"--json", "."})
 
+	// special case for backup:
+	// we don't want restic to only backup file contents, not the directory those were obtained from.
+	// thus, we cd to the dir and explicitely set the source to "."
 	cmd.Dir = path
 
 	var stderr bytes.Buffer

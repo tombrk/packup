@@ -4,8 +4,8 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/zerolog/log"
 
+	"github.com/rs/zerolog/log"
 	"github.com/sh0rez/packup/pkg/config"
 	"github.com/sh0rez/packup/pkg/restic"
 )
@@ -36,8 +36,14 @@ func (r RepoCollector) Collect(c chan<- prometheus.Metric) {
 	for name, job := range r {
 		wg.Add(1)
 		go func() {
-			rst := restic.New(job.Repo, job.Password, name)
+			defer wg.Done()
 			log := log.With().Str("job", name).Logger()
+
+			rst, err := restic.New(job.Repo, job.Password)
+			if err != nil {
+				log.Error().Err(err).Msg("Opening repo failed")
+				return
+			}
 
 			s, err := rst.Snapshots()
 			if err != nil {
@@ -47,7 +53,6 @@ func (r RepoCollector) Collect(c chan<- prometheus.Metric) {
 
 			c <- prometheus.MustNewConstMetric(snapshotsTotalDesc, prometheus.GaugeValue, float64(len(s)), name)
 			c <- prometheus.MustNewConstMetric(lastSnapshotSecondsDesc, prometheus.GaugeValue, float64(s[len(s)-1].Time.Unix()), name)
-			wg.Done()
 		}()
 		wg.Wait()
 	}
