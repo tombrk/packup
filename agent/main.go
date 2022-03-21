@@ -50,23 +50,36 @@ func main() {
 			return err
 		}
 
-		c := cron.New()
-		c.AddFunc(schedule, func() {
+		run := func() (ok bool) {
 			start := time.Now()
 			dir, err := source.Dir()
 			if err != nil {
 				log.Err(err).Msg("Failed reading backup source")
-				return
+				return false
 			}
 
 			log.Info().Str("path", dir).Msg("Starting backup")
 			if err := rst.Backup(dir); err != nil {
 				log.Err(err).Dur("took", time.Since(start)).Msg("Backup failed")
-				return
+				return false
 			}
 
 			log.Info().Dur("took", time.Since(start)).Msg("Backup finished")
-		})
+			return true
+		}
+
+		if schedule == "@now" {
+			ok := run()
+			if !ok {
+				return fmt.Errorf("Backup failed")
+			}
+			return nil
+		}
+
+		c := cron.New()
+		if _, err = c.AddFunc(schedule, func() { run() }); err != nil {
+			return err
+		}
 
 		log.Info().Str("schedule", schedule).Msg("Running")
 
