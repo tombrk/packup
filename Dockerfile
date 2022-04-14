@@ -24,7 +24,7 @@ WORKDIR /backups
 
 # agent
 FROM base as agent
-RUN apk add --no-cache sqlite
+RUN apk add --no-cache sqlite postgresql13-client
 COPY --from=go-agent /packup/packup-agent /usr/local/bin
 COPY ./mods /mods
 RUN chmod +x /mods/*
