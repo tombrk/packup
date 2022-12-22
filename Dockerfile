@@ -1,14 +1,21 @@
 # UI
-FROM node:14-alpine as js
+FROM --platform=$BUILDPLATFORM node:14-alpine as js
 COPY ./ui /ui
 WORKDIR /ui
 RUN yarn && yarn build
 
+# Go Environment
+FROM golang:1.19-alpine as env
+RUN go env | grep -E 'GOARCH|GOOS|GOARM' > /go.env
+
 # Go
-FROM golang:1.18 as go
+FROM --platform=$BUILDPLATFORM golang:1.19-alpine as go
+COPY --from=env /go.env /go.env
 WORKDIR /packup
 COPY go.mod go.sum .
+RUN apk add --no-cache make git
 RUN go mod download
+RUN source /go.env && go env -w GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM
 COPY . .
 
 FROM go as go-server
@@ -18,7 +25,7 @@ RUN make server
 FROM go as go-agent
 RUN make agent
 
-FROM alpine as base
+FROM alpine:3.17 as base
 RUN apk add --no-cache restic coreutils
 WORKDIR /backups
 

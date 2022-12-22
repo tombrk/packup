@@ -19,6 +19,11 @@ docker:
 	docker build -t shorez/packup .
 	docker build -t shorez/packup-agent --target=agent .
 
+PLATFORMS:=linux/arm/v7,linux/arm64
+docker-cross:
+	docker buildx build -t shorez/packup --platform=$(PLATFORMS) .
+	docker buildx build -t shorez/packup-agent --platform=$(PLATFORMS) --target=agent .
+
 help:
 	@awk -F ':|##' '/^[^\t].+?:.*?##/ {printf "\033[36m%-30s\033[0m %s\n", $$1, $$NF}' $(MAKEFILE_LIST) | sort
 .DEFAULT_GOAL=help
