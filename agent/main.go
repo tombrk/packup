@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-clix/cli"
-	"github.com/robfig/cron/v3"
+	cron3 "github.com/robfig/cron/v3"
 	"github.com/sh0rez/packup/pkg/config"
 	"github.com/sh0rez/packup/pkg/logs"
 	"github.com/sh0rez/packup/pkg/restic"
@@ -18,12 +21,12 @@ var Version = "dev"
 func main() {
 	cmd := &cli.Command{
 		Use:     "packup-agent [FLAGS] <SOURCE> <CRON>",
-		Short:   "Backup agent using restic",
+		Short:   "backup agent using restic",
 		Version: Version,
 		Args:    cli.ArgsExact(2),
 	}
 
-	verbose := cmd.Flags().BoolP("verbose", "v", false, "Print debug info")
+	verbose := cmd.Flags().BoolP("verbose", "v", false, "print debug info")
 	exec := cmd.Flags().BoolP("exec", "x", false, "use SOURCE as a program that prints a path to stdout")
 
 	cmd.Run = func(cmd *cli.Command, args []string) error {
@@ -39,10 +42,10 @@ func main() {
 			return fmt.Errorf("RESTIC_PASSWORD must be set")
 		}
 
-		schedule := args[1]
-		source := config.Source{Path: args[0]}
+		expr := args[1]
+		src := config.Source{Path: args[0]}
 		if *exec {
-			source = config.Source{Exec: args[0]}
+			src = config.Source{Exec: args[0]}
 		}
 
 		rst, err := restic.New(repo, pass)
@@ -50,45 +53,87 @@ func main() {
 			return err
 		}
 
-		run := func() (ok bool) {
-			start := time.Now()
-			dir, err := source.Dir()
-			if err != nil {
-				log.Err(err).Msg("Failed reading backup source")
-				return false
-			}
-
-			log.Info().Str("path", dir).Msg("Starting backup")
-			if err := rst.Backup(dir); err != nil {
-				log.Err(err).Dur("took", time.Since(start)).Msg("Backup failed")
-				return false
-			}
-
-			log.Info().Dur("took", time.Since(start)).Msg("Backup finished")
-			return true
+		task := task{
+			rst: *rst,
+			src: src,
+			sig: make(chan string),
 		}
 
-		if schedule == "@now" {
-			ok := run()
-			if !ok {
-				return fmt.Errorf("Backup failed")
+		if expr == "@now" {
+			if ok := task.run("once"); !ok {
+				os.Exit(1)
 			}
 			return nil
 		}
 
-		c := cron.New()
-		if _, err = c.AddFunc(schedule, func() { run() }); err != nil {
+		if err := cron(expr, task.sig); err != nil {
 			return err
 		}
 
-		log.Info().Str("schedule", schedule).Msg("Running")
+		stop := notify(task.sig, syscall.SIGHUP)
+		defer stop()
 
-		c.Run()
-		return nil
+		ctx := context.Background()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case tr := <-task.sig:
+				task.run(tr)
+			}
+		}
 	}
 
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+type task struct {
+	rst restic.Restic
+	src config.Source
+	sig chan string
+}
+
+func (t task) run(trigger string) bool {
+	start := time.Now()
+	dir, err := t.src.Dir()
+	if err != nil {
+		log.Err(err).Msg("failed reading backup source")
+		return false
+	}
+
+	log.Info().Str("path", dir).Str("trigger", trigger).Msg("starting backup")
+	if err := t.rst.Backup(dir); err != nil {
+		log.Err(err).Dur("took", time.Since(start)).Msg("backup failed")
+		return false
+	}
+
+	log.Info().Dur("took", time.Since(start)).Msg("backup finished")
+	return true
+}
+
+func notify(sig chan<- string, signals ...os.Signal) (stop func()) {
+	on := make(chan os.Signal)
+	go func() {
+		for s := range on {
+			sig <- fmt.Sprintf("signal(%s)", s)
+		}
+	}()
+	signal.Notify(on, signals...)
+	return func() { close(on) }
+}
+
+func cron(expr string, sig chan<- string) error {
+	c := cron3.New()
+	_, err := c.AddFunc(expr, func() {
+		sig <- fmt.Sprintf("cron(%s)", expr)
+	})
+	if err == nil {
+		log.Info().Str("cron", expr).Msg("running on schedule")
+		go c.Run()
+	}
+	return err
 }
