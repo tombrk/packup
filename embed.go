@@ -5,6 +5,6 @@ import (
 	"io/fs"
 )
 
-//go:embed ui/build/*
+//go:embed ui/dist/*
 var rawFs embed.FS
-var uiFs, _ = fs.Sub(rawFs, "ui/build")
+var uiFs, _ = fs.Sub(rawFs, "ui/dist")

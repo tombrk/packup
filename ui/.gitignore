@@ -9,8 +9,8 @@
 /coverage
 
 # production
-/build/*
-!/build/.gitkeep
+/dist/*
+!/dist/.gitkeep
 
 # misc
 .DS_Store
@@ -22,3 +22,5 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+bun.lockb

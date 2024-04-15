@@ -1,6 +1,6 @@
 module github.com/sh0rez/packup
 
-go 1.18
+go 1.22
 
 require (
 	github.com/go-clix/cli v0.1.3-0.20200520201655-dbd6eb1d350c
