@@ -11,16 +11,16 @@ agent: ## packup agent (run restic on schedule)
 	$(GO) -o packup-agent ./agent
 
 .PHONY: ui
-ui: ## React based web interface (bundled into server if built beforehand)
-	cd ui && yarn build
+ui: ## build web-ui using bun
+	cd ui && bun run build
 
-.PHONY: docker ## Build docker images
-docker:
+.PHONY: docker
+docker: ## build images
 	docker build -t shorez/packup .
 	docker build -t shorez/packup-agent --target=agent .
 
-PLATFORMS:=linux/arm/v7,linux/arm64
-docker-cross:
+PLATFORMS:=linux/arm/v7,linux/arm64,linux/amd64
+docker-cross: ## build and push images for amd64,armhf,arm64
 	docker buildx build -t shorez/packup --platform=$(PLATFORMS) --push .
 	docker buildx build -t shorez/packup-agent --platform=$(PLATFORMS) --target=agent --push .
 
