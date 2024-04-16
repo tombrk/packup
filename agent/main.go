@@ -48,7 +48,7 @@ func main() {
 			src = config.Source{Exec: args[0]}
 		}
 
-		rst, err := restic.New(repo, pass)
+		rst, err := restic.Open(repo, pass)
 		if err != nil {
 			return err
 		}
@@ -92,7 +92,7 @@ func main() {
 }
 
 type task struct {
-	rst restic.Restic
+	rst restic.Repository
 	src config.Source
 	sig chan string
 }

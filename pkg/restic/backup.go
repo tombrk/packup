@@ -16,7 +16,7 @@ type BackupStatus struct {
 	BytesDone  int `json:"bytes_done"`
 }
 
-func (r *Restic) Backup(path string) error {
+func (r *Repository) Backup(path string) error {
 	if path == "" {
 		panic("path must not be empty")
 	}

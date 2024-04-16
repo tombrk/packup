@@ -13,7 +13,7 @@ type File struct {
 	Type string `json:"type"`
 }
 
-func (r *Restic) Files(snapshot string, path string, recursive bool) ([]File, error) {
+func (r *Repository) Files(snapshot string, path string, recursive bool) ([]File, error) {
 	args := []string{snapshot, path, "--json"}
 	if recursive {
 		args = append(args, "--recursive")

@@ -39,7 +39,7 @@ func (r RepoCollector) Collect(c chan<- prometheus.Metric) {
 			defer wg.Done()
 			log := log.With().Str("job", name).Logger()
 
-			rst, err := restic.New(job.Repo, job.Password)
+			rst, err := restic.Open(job.Repo, job.Password)
 			if err != nil {
 				log.Error().Err(err).Msg("Opening repo failed")
 				return

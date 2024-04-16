@@ -5,28 +5,27 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/sh0rez/packup/pkg/exec"
 )
 
-type Restic struct {
-	Repo     string
+type Repository struct {
+	Addr     string
 	Password string
 }
 
-func New(repo, pass string) (*Restic, error) {
-	_, err := os.Stat(repo)
+func Open(addr, pass string) (*Repository, error) {
+	_, err := os.Stat(addr)
 	if err != nil && !os.IsNotExist(err) {
-		repo, err = filepath.Abs(repo)
+		addr, err = filepath.Abs(addr)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	r := &Restic{
-		Repo:     repo,
+	r := &Repository{
+		Addr:     addr,
 		Password: pass,
 	}
 	return r, nil
@@ -41,9 +40,9 @@ const (
 	EnvRepo = EnvPrefix + "REPOSITORY"
 )
 
-func (r *Restic) cmd(action string, argv []string) exec.Cmd {
+func (r *Repository) cmd(action string, argv []string) exec.Cmd {
 	cmd := exec.Command(Bin, append([]string{action}, argv...)...)
-	cmd.Env[EnvRepo] = r.Repo
+	cmd.Env[EnvRepo] = r.Addr
 	cmd.Env[EnvPass] = r.Password
 
 	return cmd
@@ -58,7 +57,7 @@ func (e ExecError) Error() string {
 	return strings.TrimSpace(fmt.Sprintf("%s.\n\n%s", e.err.Error(), e.stderr))
 }
 
-func (r *Restic) exec(action string, argv []string) ([]byte, error) {
+func (r *Repository) exec(action string, argv []string) ([]byte, error) {
 	cmd := r.cmd(action, argv)
 
 	var stderr bytes.Buffer
@@ -75,25 +74,4 @@ func (r *Restic) exec(action string, argv []string) ([]byte, error) {
 	}
 
 	return stdout.Bytes(), nil
-}
-
-// environment is a helper type for manipulating os.Environ() more easily
-type environment map[string]string
-
-func newEnv(e []string) environment {
-	env := make(environment)
-	for _, s := range e {
-		kv := strings.SplitN(s, "=", 2)
-		env[kv[0]] = kv[1]
-	}
-	return env
-}
-
-func (e environment) render() []string {
-	s := make([]string, 0, len(e))
-	for k, v := range e {
-		s = append(s, fmt.Sprintf("%s=%s", k, v))
-	}
-	sort.Strings(s)
-	return s
 }

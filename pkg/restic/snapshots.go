@@ -14,7 +14,7 @@ type Snapshot struct {
 	Time     time.Time `json:"time"`
 }
 
-func (r *Restic) Snapshots() ([]Snapshot, error) {
+func (r *Repository) Snapshots() ([]Snapshot, error) {
 	out, err := r.exec("snapshots", []string{"--json"})
 	if err != nil {
 		return nil, err

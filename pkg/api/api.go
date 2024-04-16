@@ -34,7 +34,7 @@ func New(jobs config.Jobs) http.Handler {
 	return r
 }
 
-func (a api) job(r *http.Request) (*restic.Restic, error) {
+func (a api) job(r *http.Request) (*restic.Repository, error) {
 	name, ok := mux.Vars(r)["job"]
 	if !ok {
 		return nil, fmt.Errorf("URL path field 'job' missing from request")
@@ -45,7 +45,7 @@ func (a api) job(r *http.Request) (*restic.Restic, error) {
 		return nil, fmt.Errorf("No job named '%s'. Please check your config", name)
 	}
 
-	return restic.New(job.Repo, job.Password)
+	return restic.Open(job.Repo, job.Password)
 }
 
 func (a api) jobsHandler(w http.ResponseWriter, r *http.Request) {

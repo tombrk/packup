@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (r Restic) Dump(w io.Writer, snapshot string, filepath string) error {
+func (r Repository) Dump(w io.Writer, snapshot string, filepath string) error {
 	path := strings.TrimPrefix(filepath, "/")
 
 	cmd := r.cmd("dump", []string{snapshot, path})
