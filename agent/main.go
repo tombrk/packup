@@ -2,14 +2,19 @@ package main
 
 import (
 	"context"
+	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
-	"github.com/go-clix/cli"
+	"github.com/fatih/structs"
 	cron3 "github.com/robfig/cron/v3"
+
 	"github.com/sh0rez/packup/pkg/config"
 	"github.com/sh0rez/packup/pkg/logs"
 	"github.com/sh0rez/packup/pkg/restic"
@@ -19,82 +24,119 @@ var log = logs.Logger()
 var Version = "dev"
 
 func main() {
-	cmd := &cli.Command{
-		Use:     "packup-agent [FLAGS] <SOURCE> <CRON>",
-		Short:   "backup agent using restic",
-		Version: Version,
-		Args:    cli.ArgsExact(2),
+	exec := flag.Bool("x", false, "exec src and read dir from stdout")
+	version := flag.Bool("version", false, "print version")
+	verbose := flag.Bool("v", false, "verbose output")
+	flag.Usage = func() {
+		fmt.Printf("Usage: %s [-x] <src> <cron>\n\nFlags:\n", filepath.Base(os.Args[0]))
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+	logs.Verbose(*verbose)
+
+	if *version {
+		fmt.Println(Version)
+		return
 	}
 
-	verbose := cmd.Flags().BoolP("verbose", "v", false, "print debug info")
-	exec := cmd.Flags().BoolP("exec", "x", false, "use SOURCE as a program that prints a path to stdout")
-
-	cmd.Run = func(cmd *cli.Command, args []string) error {
-		logs.Verbose(*verbose)
-
-		repo := os.Getenv("RESTIC_REPOSITORY")
-		if repo == "" {
-			return fmt.Errorf("RESTIC_REPOSITORY must be set")
-		}
-
-		pass := os.Getenv("RESTIC_PASSWORD")
-		if pass == "" {
-			return fmt.Errorf("RESTIC_PASSWORD must be set")
-		}
-
-		expr := args[1]
-		src := config.Source{Path: args[0]}
-		if *exec {
-			src = config.Source{Exec: args[0]}
-		}
-
-		rst, err := restic.Open(repo, pass)
-		if err != nil {
-			return err
-		}
-
-		task := task{
-			rst: *rst,
-			src: src,
-			sig: make(chan string),
-		}
-
-		if expr == "@now" {
-			if ok := task.run("once"); !ok {
-				os.Exit(1)
-			}
-			return nil
-		}
-
-		if err := cron(expr, task.sig); err != nil {
-			return err
-		}
-
-		stop := notify(task.sig, syscall.SIGHUP)
-		defer stop()
-
-		ctx := context.Background()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			case tr := <-task.sig:
-				task.run(tr)
-			}
-		}
-	}
-
-	if err := cmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	if flag.NArg() != 2 {
+		flag.Usage()
 		os.Exit(1)
+	}
+
+	cfg, err := parse()
+	if err != nil {
+		log.Fatal().Err(err).Msgf("parsing config")
+	}
+
+	cfg.Src = config.Source{Path: flag.Arg(0)}
+	if *exec {
+		cfg.Src = config.Source{Exec: flag.Arg(0)}
+	}
+
+	ctx := context.Background()
+	if err := run(ctx, cfg); err != nil {
+		log.Fatal().Msg(err.Error())
 	}
 }
 
+func run(ctx context.Context, cfg Config) error {
+	repo, err := restic.Open(cfg.Repo, cfg.Password)
+	if err != nil {
+		return err
+	}
+
+	task := task{
+		repo: *repo,
+		src:  cfg.Src,
+		sig:  make(chan string),
+	}
+
+	if cfg.Cron == "@now" {
+		if ok := task.run("once"); !ok {
+			os.Exit(1)
+		}
+		return nil
+	}
+
+	if err := cron(cfg.Cron, task.sig); err != nil {
+		return err
+	}
+
+	stop := notify(task.sig, syscall.SIGHUP)
+	defer stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case trigger := <-task.sig:
+			task.run(trigger)
+		}
+	}
+}
+
+type Config struct {
+	Repo     string `env:"RESTIC_REPOSITORY"`
+	Password string `env:"RESTIC_PASSWORD"`
+
+	Src  config.Source
+	Cron string `arg:"1"`
+}
+
+func parse() (Config, error) {
+	var cfg Config
+	var errs error
+
+	for _, f := range structs.Fields(&cfg) {
+		if key := f.Tag("env"); key != "" {
+			val := os.Getenv(key)
+			if val == "" {
+				errs = errors.Join(errs, fmt.Errorf("env-var %s must be set", key))
+			}
+			f.Set(val)
+		}
+
+		if pos := f.Tag("arg"); pos != "" {
+			i, err := strconv.Atoi(pos)
+			if err != nil {
+				panic(err)
+			}
+			val := flag.Arg(i)
+			if val == "" {
+				errs = errors.Join(errs, fmt.Errorf("pos-arg %d must be set", i))
+			}
+			f.Set(flag.Arg(i))
+		}
+	}
+
+	return cfg, errs
+}
+
 type task struct {
-	rst restic.Repository
-	src config.Source
-	sig chan string
+	repo restic.Repository
+	src  config.Source
+	sig  chan string
 }
 
 func (t task) run(trigger string) bool {
@@ -106,7 +148,7 @@ func (t task) run(trigger string) bool {
 	}
 
 	log.Info().Str("path", dir).Str("trigger", trigger).Msg("starting backup")
-	if err := t.rst.Backup(dir); err != nil {
+	if err := t.repo.Backup(dir); err != nil {
 		log.Err(err).Dur("took", time.Since(start)).Msg("backup failed")
 		return false
 	}
