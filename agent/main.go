@@ -119,7 +119,7 @@ func notify(sig chan<- string, signals ...os.Signal) (stop func()) {
 	on := make(chan os.Signal)
 	go func() {
 		for s := range on {
-			sig <- fmt.Sprintf("signal(%s)", s)
+			trigger(sig, fmt.Sprintf("signal(%s)", s))
 		}
 	}()
 	signal.Notify(on, signals...)
@@ -129,11 +129,19 @@ func notify(sig chan<- string, signals ...os.Signal) (stop func()) {
 func cron(expr string, sig chan<- string) error {
 	c := cron3.New()
 	_, err := c.AddFunc(expr, func() {
-		sig <- fmt.Sprintf("cron(%s)", expr)
+		trigger(sig, fmt.Sprintf("cron(%s)", expr))
 	})
 	if err == nil {
 		log.Info().Str("cron", expr).Msg("running on schedule")
 		go c.Run()
 	}
 	return err
+}
+
+func trigger(sig chan<- string, from string) {
+	select {
+	case sig <- from:
+	default:
+		log.Error().Str("trigger", from).Msg("backup already in progress")
+	}
 }
