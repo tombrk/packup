@@ -1,7 +1,8 @@
 package config
 
 import (
-	"io/ioutil"
+	"errors"
+	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v2"
@@ -9,9 +10,6 @@ import (
 
 type Config struct {
 	Jobs Jobs `yaml:"jobs"`
-
-	API bool `yaml:"api"`
-	UI  bool `yaml:"ui"`
 }
 
 type Job struct {
@@ -21,33 +19,26 @@ type Job struct {
 
 type Jobs map[string]Job
 
-func Load(data []byte) (*Config, error) {
-	config := Config{
-		UI:  true,
-		API: true,
-	}
-
+func Parse(data []byte) (*Config, error) {
+	var config Config
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, err
 	}
 
-	for k, v := range config.Jobs {
-		repo, err := filepath.Abs(v.Repo)
-		if err != nil {
-			return nil, err
-		}
-		v.Repo = repo
-		config.Jobs[k] = v
+	var errs error
+	for name, job := range config.Jobs {
+		repo, err := filepath.Abs(job.Repo)
+		errs = errors.Join(errs, err)
+		job.Repo = repo
+		config.Jobs[name] = job
 	}
-
-	return &config, nil
+	return &config, errs
 }
 
-func LoadFile(file string) (*Config, error) {
-	data, err := ioutil.ReadFile(file)
+func Load(file string) (*Config, error) {
+	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
-
-	return Load(data)
+	return Parse(data)
 }
