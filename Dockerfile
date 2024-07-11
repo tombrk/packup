@@ -35,7 +35,7 @@ WORKDIR /backups
 
 # agent
 FROM base as agent
-RUN apk add --no-cache sqlite postgresql13-client mariadb-client
+RUN apk add --no-cache sqlite postgresql13-client mariadb-client rclone
 COPY --from=go-agent /packup/packup-agent /usr/local/bin
 COPY ./mods /mods
 RUN chmod +x /mods/*
