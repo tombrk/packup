@@ -1,49 +1,81 @@
 # syntax=docker/dockerfile:1.7-labs
 
 # UI
-FROM --platform=$BUILDPLATFORM oven/bun:1-alpine as js
+FROM --platform=$BUILDPLATFORM oven/bun:1-alpine AS js
 WORKDIR /ui
-COPY ui/yarn.lock ui/package.json .
+COPY ui/yarn.lock ui/package.json ./
 RUN bun install --yarn
-COPY ui .
+COPY ui ./
 RUN bun run build
 
-# Go Environment
-FROM golang:1.22-alpine as env
-RUN go env | grep -E 'GOARCH|GOOS|GOARM' > /go.env
+FROM --platform=$BUILDPLATFORM golang:alpine AS goenv
+ARG TARGETOS
+ARG TARGETARCH
+RUN printf 'export GOOS=%s\nexport GOARCH=%s\n' "$TARGETOS" "$TARGETARCH" > /goenv
 
-# Go
-FROM --platform=$BUILDPLATFORM golang:1.22-alpine as go
-COPY --from=env /go.env /go.env
-WORKDIR /packup
-COPY go.mod go.sum .
-RUN apk add --no-cache make git
-RUN go mod download
-RUN source /go.env && go env -w GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM
-COPY . .
+FROM --platform=$BUILDPLATFORM golang:alpine AS gomod
+RUN apk add --no-cache git
+ARG GOFLAGS
+ARG GOEXPERIMENT
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
-FROM go as go-server
-COPY --from=js /ui/dist ui/dist
-RUN make server
+FROM --platform=$BUILDPLATFORM gomod AS build-restic
+ARG RESTIC_VERSION=0.19.0
+ARG GOFLAGS
+ARG GOEXPERIMENT
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=bind,from=goenv,source=/goenv,target=/goenv \
+    . /goenv && CGO_ENABLED=0 GOBIN=/out go install "github.com/restic/restic/cmd/restic@v${RESTIC_VERSION}"
 
-FROM go as go-agent
-RUN make agent
+FROM --platform=$BUILDPLATFORM gomod AS build-server
+ARG GOFLAGS
+ARG GOEXPERIMENT
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=bind,target=/src \
+    --mount=type=bind,from=js,source=/ui/dist,target=/ui-dist \
+    --mount=type=bind,from=goenv,source=/goenv,target=/goenv \
+    . /goenv && \
+    cp -a /src/. /work && \
+    rm -rf /work/ui/dist && \
+    mkdir -p /work/ui && \
+    cp -a /ui-dist /work/ui/dist && \
+    cd /work && \
+    VERSION=$(git describe --tags --dirty --always 2>/dev/null || echo unknown) && \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -extldflags '-static' -X main.Version=${VERSION}" -o /out/packup-server .
 
-FROM alpine:3.19 as base
-RUN apk add --no-cache restic coreutils
+FROM --platform=$BUILDPLATFORM gomod AS build-agent
+ARG GOFLAGS
+ARG GOEXPERIMENT
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=bind,target=/src \
+    --mount=type=bind,from=goenv,source=/goenv,target=/goenv \
+    . /goenv && \
+    cd /src && \
+    VERSION=$(git describe --tags --dirty --always 2>/dev/null || echo unknown) && \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -extldflags '-static' -X main.Version=${VERSION}" -o /out/packup-agent ./agent
+
+FROM alpine:3.22 AS base
+RUN apk add --no-cache coreutils ca-certificates
+COPY --from=build-restic /out/restic /usr/local/bin/restic
 WORKDIR /backups
 
 # agent
-FROM base as agent
+FROM base AS agent
 RUN apk add --no-cache sqlite postgresql13-client mariadb-client rclone
-COPY --from=go-agent /packup/packup-agent /usr/local/bin
+COPY --from=build-agent /out/packup-agent /usr/local/bin/packup-agent
 COPY ./mods /mods
 RUN chmod +x /mods/*
 ENTRYPOINT ["packup-agent"]
 
 # server
-FROM base as server
-COPY --from=go-server /packup/packup-server /usr/local/bin
+FROM base AS server
+COPY --from=build-server /out/packup-server /usr/local/bin/packup-server
 ENTRYPOINT ["packup-server"]
 CMD ["--config=/etc/packup/packup.yaml"]
 

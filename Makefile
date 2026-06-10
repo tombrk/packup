@@ -19,8 +19,8 @@ docker: ## build images
 	docker build -t shorez/packup .
 	docker build -t shorez/packup-agent --target=agent .
 
-PLATFORMS:=linux/arm/v7,linux/arm64,linux/amd64
-docker-cross: ## build and push images for amd64,armhf,arm64
+PLATFORMS:=linux/arm64,linux/amd64
+docker-cross: ## build and push images for amd64,arm64
 	docker buildx build -t shorez/packup --platform=$(PLATFORMS) --push .
 	docker buildx build -t shorez/packup-agent --platform=$(PLATFORMS) --target=agent --push .
 

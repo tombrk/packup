@@ -11,8 +11,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 
-	"github.com/sh0rez/packup/pkg/config"
-	"github.com/sh0rez/packup/pkg/restic"
+	"github.com/sh0rez/packup/internal/config"
+	"github.com/sh0rez/packup/internal/restic"
 )
 
 type api struct {

@@ -6,8 +6,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/rs/zerolog/log"
-	"github.com/sh0rez/packup/pkg/config"
-	"github.com/sh0rez/packup/pkg/restic"
+	"github.com/sh0rez/packup/internal/config"
+	"github.com/sh0rez/packup/internal/restic"
 )
 
 const Namespace = "packup"

@@ -1,20 +1,22 @@
 package restic
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"strings"
+	"io"
 )
 
 type File struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
-	Size int    `json:"size"`
-	Type string `json:"type"`
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Size        int    `json:"size"`
+	Type        string `json:"type"`
+	MessageType string `json:"message_type,omitempty"`
 }
 
 func (r *Repository) Files(snapshot string, path string, recursive bool) ([]File, error) {
-	args := []string{snapshot, path, "--json"}
+	args := []string{snapshot, path, "--json", "--no-lock"}
 	if recursive {
 		args = append(args, "--recursive")
 	}
@@ -24,19 +26,23 @@ func (r *Repository) Files(snapshot string, path string, recursive bool) ([]File
 		return nil, err
 	}
 
-	lines := strings.TrimSuffix(string(out), "\n")
+	dec := json.NewDecoder(bytes.NewReader(out))
 
 	var files []File
-	for _, l := range strings.Split(lines, "\n") {
-		if l == "" {
-			continue
-		}
-
+	for {
 		var f File
-		if err := json.Unmarshal([]byte(l), &f); err != nil {
+		if err := dec.Decode(&f); err != nil {
+			if err == io.EOF {
+				break
+			}
 			return nil, err
 		}
 
+		// restic ls --json emits a leading snapshot object and, in newer
+		// versions, explicit message_type values. Keep only actual file nodes.
+		if f.MessageType != "" && f.MessageType != "node" {
+			continue
+		}
 		if !(f.Type == "file" || f.Type == "dir") {
 			continue
 		}

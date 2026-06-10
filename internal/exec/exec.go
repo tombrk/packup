@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -13,7 +14,7 @@ func Command(name string, argv ...string) Cmd {
 
 	return Cmd{
 		Cmd: *cmd,
-		Env: EnvFrom(cmd.Env),
+		Env: EnvFrom(os.Environ()),
 	}
 }
 
@@ -44,11 +45,11 @@ func (e Env) Strings() []string {
 }
 
 func EnvFrom(strs []string) Env {
-	e := make(Env)
-	for _, s := range e {
+	e := make(Env, len(strs))
+	for _, s := range strs {
 		k, v, ok := strings.Cut(s, "=")
 		if !ok {
-			panic(e)
+			panic(s)
 		}
 		e[k] = v
 	}

@@ -10,10 +10,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/sh0rez/packup/pkg/api"
-	"github.com/sh0rez/packup/pkg/config"
-	"github.com/sh0rez/packup/pkg/logs"
-	"github.com/sh0rez/packup/pkg/metrics"
+	"github.com/sh0rez/packup/internal/api"
+	"github.com/sh0rez/packup/internal/config"
+	"github.com/sh0rez/packup/internal/logs"
+	"github.com/sh0rez/packup/internal/metrics"
 	"github.com/sh0rez/packup/ui"
 )
 

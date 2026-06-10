@@ -15,9 +15,9 @@ import (
 	"github.com/fatih/structs"
 	cron3 "github.com/robfig/cron/v3"
 
-	"github.com/sh0rez/packup/pkg/config"
-	"github.com/sh0rez/packup/pkg/logs"
-	"github.com/sh0rez/packup/pkg/restic"
+	"github.com/sh0rez/packup/internal/config"
+	"github.com/sh0rez/packup/internal/logs"
+	"github.com/sh0rez/packup/internal/restic"
 )
 
 var log = logs.Logger()
@@ -148,12 +148,25 @@ func (t task) run(trigger string) bool {
 	}
 
 	log.Info().Str("path", dir).Str("trigger", trigger).Msg("starting backup")
-	if err := t.repo.Backup(dir); err != nil {
+	result, err := t.repo.Backup(dir)
+	if err != nil {
 		log.Err(err).Dur("took", time.Since(start)).Msg("backup failed")
 		return false
 	}
 
-	log.Info().Dur("took", time.Since(start)).Msg("backup finished")
+	event := log.Info().Dur("took", time.Since(start))
+	if result != nil && result.Summary != nil {
+		event = event.
+			Str("snapshot", result.Summary.SnapshotID).
+			Uint("files", result.Summary.TotalFilesProcessed).
+			Uint64("bytes", result.Summary.TotalBytesProcessed).
+			Uint64("data_added", result.Summary.DataAdded).
+			Uint64("data_added_packed", result.Summary.DataAddedPacked)
+		if result.Summary.SnapshotID == "" {
+			event = event.Bool("snapshot_skipped", true)
+		}
+	}
+	event.Msg("backup finished")
 	return true
 }
 
