@@ -1,13 +1,9 @@
-/** @jsx jsx */
-import { jsx } from "@emotion/core";
-import styled from "@emotion/styled";
-
 import { useEffect, useState } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 import axios from "axios";
 import { addr } from "../api";
 
-import { Breadcrumbs, IconButton, Link, Paper } from "@material-ui/core";
+import { Breadcrumbs, IconButton, Link, Paper, styled } from "@material-ui/core";
 import { ArrowBack } from "@material-ui/icons";
 import { useTheme } from "@material-ui/core/styles";
 
@@ -33,6 +29,7 @@ export const SnapshotView = () => {
   const [snapshots, setSnapshots] = useState([]);
 
   const { enqueueSnackbar } = useSnackbar();
+  const theme = useTheme();
 
   // load filelist from api
   useEffect(() => {
@@ -75,11 +72,11 @@ export const SnapshotView = () => {
   return (
     <Layout
       preTitle={
-        <div css={{ display: "flex", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <IconButton
             to="/"
             component={RouterLink}
-            css={{ marginRight: useTheme().spacing(1) }}
+            style={{ marginRight: theme.spacing(1) }}
             edge="start"
             color="inherit"
           >
@@ -89,7 +86,7 @@ export const SnapshotView = () => {
         </div>
       }
       title={
-        <div css={{ display: "flex", flexDirection: "row", flexGrow: 1 }}>
+        <div style={{ display: "flex", flexDirection: "row", flexGrow: 1 }}>
           <PathNav elems={elems} job={job} />
           <HeaderPaper>
             <SnapPicker
@@ -115,7 +112,7 @@ export const SnapshotView = () => {
  * @param {String[]} props.elems - current path splitted to individual folder names (`string.split('/')`)
  */
 const PathNav = ({ elems, job }) => (
-  <HeaderPaper css={{ flexGrow: 1 }}>
+  <HeaderPaper style={{ flexGrow: 1 }}>
     <Breadcrumbs>
       {elems.map((e, i) => (
         <Link
