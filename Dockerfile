@@ -3,8 +3,9 @@
 # UI
 FROM --platform=$BUILDPLATFORM oven/bun:1-alpine AS js
 WORKDIR /ui
-COPY ui/yarn.lock ui/package.json ./
-RUN bun install --yarn
+COPY ui/bun.lock ui/package.json ./
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile
 COPY ui ./
 RUN bun run build
 
