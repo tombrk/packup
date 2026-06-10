@@ -11,6 +11,7 @@ import {
 import React from "react";
 
 import { addr } from "../api";
+import { formatBytes } from "../format";
 
 /**
  * FileList lists files from a path of a Restic snapshot
@@ -98,20 +99,3 @@ const ItemIconLink = ({ name, text, to, external, icon, children }) => (
   </ListItem>
 );
 
-/**
- * formatBytes converts a numeric byte count into a human readable unit (`KB`, `MB`, etc)
- * @param {Number} bytes - The bytes to format
- * @param {Number} decimals - Decimal count to use
- * @returns {String} Human readable string format
- */
-function formatBytes(bytes, decimals = 2) {
-  if (bytes === 0) return "0 Bytes";
-
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
-}

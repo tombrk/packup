@@ -11,6 +11,7 @@ import { useSnackbar } from "notistack";
 
 import { Layout, AppTitle } from "./Layout";
 import { FileList } from "../components/FileList";
+import { SnapshotStats } from "../components/SnapshotStats";
 
 import SnapPicker from "../SnapPicker";
 
@@ -30,6 +31,7 @@ export const SnapshotView = () => {
 
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
+  const currentSnapshot = getCurrentSnapshot(snapshots, snapshot);
 
   // load filelist from api
   useEffect(() => {
@@ -101,9 +103,29 @@ export const SnapshotView = () => {
       loading={!files.length}
     >
       <FileList files={files}></FileList>
+      <SnapshotStats snapshot={currentSnapshot} />
     </Layout>
   );
 };
+
+function getCurrentSnapshot(snapshots, current) {
+  if (snapshots.length === 0) return undefined;
+
+  const normalized = snapshots.map((snapshot) => ({
+    ...snapshot,
+    shortId: snapshot.id.substring(0, 8),
+  }));
+
+  if (current === "latest") {
+    return normalized.sort(
+      (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
+    )[0];
+  }
+
+  return normalized.find(
+    (snapshot) => snapshot.id === current || snapshot.shortId === current
+  );
+}
 
 /**
  * PathNav is the explorer-like navigation
