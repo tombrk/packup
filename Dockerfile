@@ -29,7 +29,10 @@ ARG GOEXPERIMENT
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     --mount=type=bind,from=goenv,source=/goenv,target=/goenv \
-    . /goenv && CGO_ENABLED=0 GOBIN=/out go install "github.com/restic/restic/cmd/restic@v${RESTIC_VERSION}"
+    . /goenv && \
+    go mod download "github.com/restic/restic@v${RESTIC_VERSION}" && \
+    cd "$(go env GOMODCACHE)/github.com/restic/restic@v${RESTIC_VERSION}" && \
+    CGO_ENABLED=0 go build -trimpath -o /out/restic ./cmd/restic
 
 FROM --platform=$BUILDPLATFORM gomod AS build-server
 ARG GOFLAGS
@@ -60,14 +63,14 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     VERSION=$(git describe --tags --dirty --always 2>/dev/null || echo unknown) && \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -extldflags '-static' -X main.Version=${VERSION}" -o /out/packup-agent ./agent
 
-FROM alpine:3.22 AS base
+FROM alpine:latest AS base
 RUN apk add --no-cache coreutils ca-certificates
 COPY --from=build-restic /out/restic /usr/local/bin/restic
 WORKDIR /backups
 
 # agent
 FROM base AS agent
-RUN apk add --no-cache sqlite postgresql13-client mariadb-client rclone
+RUN apk add --no-cache sqlite postgresql18-client mariadb-client rclone
 COPY --from=build-agent /out/packup-agent /usr/local/bin/packup-agent
 COPY ./mods /mods
 RUN chmod +x /mods/*
